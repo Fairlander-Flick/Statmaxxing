@@ -35,6 +35,7 @@ export const KEYS = {
   // Train
   programs: 'train:programs',
   workoutLogs: 'train:logs',
+  stepLogs: 'train:steps',
 
   // Mind
   mindActivities: 'mind:activities',
@@ -62,6 +63,12 @@ export type WeightLog = {
   id: string;
   date: string;
   kg: number;
+};
+
+export type StepLog = {
+  id: string;
+  date: string;
+  steps: number;
 };
 
 export type Macro = {
