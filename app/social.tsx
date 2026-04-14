@@ -3,8 +3,9 @@ import {
   ScrollView, Text, View, StyleSheet, TouchableOpacity, TextInput, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, globalStyles } from '../constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useTheme, makeGlobalStyles } from '../lib/ThemeContext';
+import { useLayout } from '../lib/useLayout';
 import {
   saveData, loadData, appendToList, KEYS, toDay, generateId,
   Person, PersonType, SocialLog,
@@ -12,65 +13,44 @@ import {
 
 const PERSON_TYPES: PersonType[] = ['Aile', 'Arkadaş', 'Hayvan', 'Diğer'];
 const TYPE_ICON: Record<PersonType, React.ComponentProps<typeof Ionicons>['name']> = {
-  Aile: 'home-outline',
-  Arkadaş: 'people-outline',
-  Hayvan: 'paw-outline',
-  Diğer: 'person-outline',
+  Aile: 'home-outline', Arkadaş: 'people-outline', Hayvan: 'paw-outline', Diğer: 'person-outline',
 };
-const TYPE_COLOR: Record<PersonType, string> = {
-  Aile: COLORS.vit,
-  Arkadaş: COLORS.soc,
-  Hayvan: COLORS.orange,
-  Diğer: COLORS.textSub,
-};
-
-type View = 'log' | 'people';
 
 export default function SocialScreen() {
+  const { colors } = useTheme();
+  const layout = useLayout();
+  const gs = makeGlobalStyles(colors);
+
+  const TYPE_COLOR: Record<PersonType, string> = {
+    Aile: colors.vit, Arkadaş: colors.soc, Hayvan: colors.str, Diğer: colors.textSub,
+  };
+
   const [activeView, setActiveView] = useState<'log' | 'people'>('log');
   const [people, setPeople] = useState<Person[]>([]);
   const [todayLogs, setTodayLogs] = useState<SocialLog[]>([]);
-
-  // Add person form
   const [personName, setPersonName] = useState('');
   const [personType, setPersonType] = useState<PersonType>('Arkadaş');
   const [closeness, setCloseness] = useState(5);
-
-  // Log time form
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
   const [minutes, setMinutes] = useState('');
-
   const today = toDay();
 
   useEffect(() => {
     loadData<Person[]>(KEYS.people, []).then(setPeople);
-    loadData<SocialLog[]>(KEYS.socialLogs, []).then((logs) =>
-      setTodayLogs(logs.filter((l) => l.date === today))
-    );
+    loadData<SocialLog[]>(KEYS.socialLogs, []).then((logs) => setTodayLogs(logs.filter((l) => l.date === today)));
   }, []);
 
   const addPerson = async () => {
     if (!personName.trim()) return;
-    const person: Person = {
-      id: generateId(), name: personName.trim(), type: personType, closeness,
-    };
-    const updated = [...people, person];
+    const updated = [...people, { id: generateId(), name: personName.trim(), type: personType, closeness }];
     await saveData(KEYS.people, updated);
-    setPeople(updated);
-    setPersonName('');
-    setCloseness(5);
+    setPeople(updated); setPersonName(''); setCloseness(5);
   };
 
   const deletePerson = async (id: string) => {
     Alert.alert('Remove', 'Remove this person?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove', style: 'destructive', onPress: async () => {
-          const updated = people.filter((p) => p.id !== id);
-          await saveData(KEYS.people, updated);
-          setPeople(updated);
-        },
-      },
+      { text: 'Remove', style: 'destructive', onPress: async () => { const updated = people.filter((p) => p.id !== id); await saveData(KEYS.people, updated); setPeople(updated); } },
     ]);
   };
 
@@ -79,244 +59,192 @@ export default function SocialScreen() {
     if (!selectedPersonId || isNaN(mins) || mins <= 0) return;
     const person = people.find((p) => p.id === selectedPersonId);
     if (!person) return;
-    const log: SocialLog = {
-      id: generateId(), date: today, personId: selectedPersonId,
-      personName: person.name, minutes: mins,
-    };
-    const updated = await appendToList<SocialLog>(KEYS.socialLogs, log);
+    const updated = await appendToList<SocialLog>(KEYS.socialLogs, { id: generateId(), date: today, personId: selectedPersonId, personName: person.name, minutes: mins });
     setTodayLogs(updated.filter((l) => l.date === today));
-    setMinutes('');
-    setSelectedPersonId(null);
+    setMinutes(''); setSelectedPersonId(null);
+  };
+
+  const deleteSocialLog = async (id: string) => {
+    const all = await loadData<SocialLog[]>(KEYS.socialLogs, []);
+    const updated = all.filter((l) => l.id !== id);
+    await saveData(KEYS.socialLogs, updated);
+    setTodayLogs(updated.filter((l) => l.date === today));
   };
 
   const totalMinutesToday = todayLogs.reduce((s, l) => s + l.minutes, 0);
+  const fw = { alignSelf: 'center' as const, width: '100%' as const, maxWidth: layout.inputMaxWidth };
+  const contentStyle = { width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20 };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.bg }}>
-      {/* View Toggle */}
-      <View style={styles.viewToggle}>
-        <TouchableOpacity
-          style={[styles.toggleBtn, activeView === 'log' && { backgroundColor: COLORS.soc }]}
-          onPress={() => setActiveView('log')}
-        >
-          <Text style={[styles.toggleBtnText, activeView === 'log' && { color: '#000' }]}>Log Time</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleBtn, activeView === 'people' && { backgroundColor: COLORS.soc }]}
-          onPress={() => setActiveView('people')}
-        >
-          <Text style={[styles.toggleBtnText, activeView === 'people' && { color: '#000' }]}>People</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* Toggle */}
+      <View style={[s.viewToggle, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={{ flexDirection: 'row', gap: 8, maxWidth: layout.maxWidth, width: '100%', alignSelf: 'center', paddingHorizontal: layout.hPadding }}>
+          {(['log', 'people'] as const).map((v) => (
+            <TouchableOpacity key={v}
+              style={[s.toggleBtn, { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+                activeView === v && { backgroundColor: colors.soc + '22', borderColor: colors.soc }]}
+              onPress={() => setActiveView(v)}>
+              <Ionicons name={v === 'log' ? 'time-outline' : 'people-outline'} size={18} color={activeView === v ? colors.soc : colors.textSub} />
+              <Text style={[s.toggleBtnText, { color: activeView === v ? colors.soc : colors.textSub }]}>
+                {v === 'log' ? 'Log Time' : 'People'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
-      <ScrollView style={globalStyles.container} showsVerticalScrollIndicator={false}>
-        {/* ── LOG TIME VIEW ── */}
-        {activeView === 'log' && (
-          <>
-            <Text style={globalStyles.screenTitle}>Social</Text>
-            <Text style={globalStyles.screenSub}>
-              {totalMinutesToday > 0 ? `${totalMinutesToday} min with people today` : 'Log time with people'}
-            </Text>
+      <ScrollView style={gs.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center' }}>
+        <View style={contentStyle}>
 
-            {people.length === 0 ? (
-              <View style={globalStyles.card}>
-                <Text style={{ color: COLORS.textSub, textAlign: 'center', paddingVertical: 20 }}>
-                  No people yet. Go to "People" tab to add someone!
-                </Text>
-              </View>
-            ) : (
-              <>
-                <Text style={globalStyles.sectionTitle}>Who did you spend time with?</Text>
-                {people.map((p) => (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={[
-                      globalStyles.card,
-                      { flexDirection: 'row', alignItems: 'center' },
-                      selectedPersonId === p.id && { borderColor: COLORS.soc },
-                    ]}
-                    onPress={() => setSelectedPersonId(selectedPersonId === p.id ? null : p.id)}
-                  >
-                    <Ionicons name={TYPE_ICON[p.type]} size={20} color={TYPE_COLOR[p.type]} style={{ marginRight: 12 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: COLORS.text, fontWeight: '700' }}>{p.name}</Text>
-                      <Text style={{ color: COLORS.textSub, fontSize: 12 }}>
-                        {p.type} · Closeness {p.closeness}/10
-                      </Text>
-                    </View>
-                    {selectedPersonId === p.id && (
-                      <Ionicons name="checkmark-circle" size={22} color={COLORS.soc} />
-                    )}
-                  </TouchableOpacity>
-                ))}
+          {/* ── LOG TIME ── */}
+          {activeView === 'log' && (
+            <>
+              <Text style={gs.screenTitle}>Social</Text>
+              <Text style={gs.screenSub}>
+                {totalMinutesToday > 0 ? `${totalMinutesToday} min with people today 🤝` : 'Log quality time with people'}
+              </Text>
 
-                {selectedPersonId && (
-                  <View style={globalStyles.card}>
-                    <Text style={globalStyles.label}>Time spent (minutes)</Text>
-                    <TextInput
-                      style={globalStyles.input}
-                      placeholder="e.g. 60"
-                      placeholderTextColor={COLORS.textSub}
-                      keyboardType="numeric"
-                      value={minutes}
-                      onChangeText={setMinutes}
-                    />
-                    <TouchableOpacity style={[globalStyles.btnPrimary, { backgroundColor: COLORS.soc }]} onPress={logTime}>
-                      <Text style={globalStyles.btnPrimaryText}>Log Time</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </>
-            )}
+              {totalMinutesToday > 0 && (
+                <View style={[gs.card, { alignItems: 'center', borderColor: colors.soc + '44', paddingVertical: 24 }]}>
+                  <Text style={{ color: colors.soc, fontSize: 48, fontWeight: '900' }}>{totalMinutesToday}</Text>
+                  <Text style={{ color: colors.textSub, fontSize: 16, marginTop: 4 }}>minutes today</Text>
+                </View>
+              )}
 
-            {/* Today's logs */}
-            {todayLogs.length > 0 && (
-              <>
-                <Text style={globalStyles.sectionTitle}>Today's Social Log</Text>
-                {todayLogs.map((l) => (
-                  <View key={l.id} style={[globalStyles.card, { flexDirection: 'row', justifyContent: 'space-between' }]}>
-                    <Text style={{ color: COLORS.text, fontWeight: '700' }}>{l.personName}</Text>
-                    <Text style={{ color: COLORS.soc, fontWeight: '700' }}>{l.minutes} min</Text>
-                  </View>
-                ))}
-              </>
-            )}
-          </>
-        )}
-
-        {/* ── PEOPLE MANAGEMENT ── */}
-        {activeView === 'people' && (
-          <>
-            <Text style={globalStyles.screenTitle}>People</Text>
-            <Text style={globalStyles.screenSub}>Manage your social circle</Text>
-
-            {/* Add person form */}
-            <View style={globalStyles.card}>
-              <Text style={styles.cardTitle}>Add Person</Text>
-              <TextInput style={globalStyles.input} placeholder="Name" placeholderTextColor={COLORS.textSub} value={personName} onChangeText={setPersonName} />
-              <Text style={globalStyles.label}>Type</Text>
-              <View style={styles.typeRow}>
-                {PERSON_TYPES.map((t) => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[styles.typeBtn, personType === t && { backgroundColor: TYPE_COLOR[t] + '33', borderColor: TYPE_COLOR[t] }]}
-                    onPress={() => setPersonType(t)}
-                  >
-                    <Ionicons name={TYPE_ICON[t]} size={16} color={personType === t ? TYPE_COLOR[t] : COLORS.textSub} />
-                    <Text style={[styles.typeBtnText, personType === t && { color: TYPE_COLOR[t] }]}>{t}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={globalStyles.label}>Closeness: {closeness}/10</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <TouchableOpacity
-                      key={n}
-                      style={[styles.scoreBtn, closeness === n && { backgroundColor: COLORS.soc, borderColor: COLORS.soc }]}
-                      onPress={() => setCloseness(n)}
-                    >
-                      <Text style={[styles.scoreBtnText, closeness === n && { color: '#000' }]}>{n}</Text>
+              {people.length === 0 ? (
+                <View style={[gs.card, { alignItems: 'center', paddingVertical: 32 }]}>
+                  <Ionicons name="people-outline" size={48} color={colors.textMuted} />
+                  <Text style={{ color: colors.textSub, textAlign: 'center', marginTop: 12, fontSize: 16 }}>No people yet.</Text>
+                  <Text style={{ color: colors.textMuted, textAlign: 'center', fontSize: 14, marginTop: 4 }}>Go to "People" tab to add someone!</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={gs.sectionTitle}>Who did you spend time with?</Text>
+                  {people.map((p) => (
+                    <TouchableOpacity key={p.id}
+                      style={[gs.card, { flexDirection: 'row', alignItems: 'center', gap: 14 },
+                        selectedPersonId === p.id && { borderColor: colors.soc, borderWidth: 2 }]}
+                      onPress={() => setSelectedPersonId(selectedPersonId === p.id ? null : p.id)}>
+                      <View style={[s.personIcon, { backgroundColor: TYPE_COLOR[p.type] + '22' }]}>
+                        <Ionicons name={TYPE_ICON[p.type]} size={22} color={TYPE_COLOR[p.type]} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: colors.text, fontWeight: '700', fontSize: 17 }}>{p.name}</Text>
+                        <Text style={{ color: colors.textSub, fontSize: 14, marginTop: 2 }}>{p.type} · Closeness {p.closeness}/10</Text>
+                      </View>
+                      {selectedPersonId === p.id && <Ionicons name="checkmark-circle" size={26} color={colors.soc} />}
                     </TouchableOpacity>
                   ))}
-                </View>
-              </ScrollView>
-              <TouchableOpacity style={[globalStyles.btnPrimary, { backgroundColor: COLORS.soc }]} onPress={addPerson}>
-                <Text style={globalStyles.btnPrimaryText}>Add Person</Text>
-              </TouchableOpacity>
-            </View>
 
-            {/* Current people list */}
-            {people.length > 0 && (
-              <>
-                <Text style={globalStyles.sectionTitle}>Your People ({people.length})</Text>
-                {people.map((p) => (
-                  <View key={p.id} style={[globalStyles.card, { flexDirection: 'row', alignItems: 'center' }]}>
-                    <Ionicons name={TYPE_ICON[p.type]} size={22} color={TYPE_COLOR[p.type]} style={{ marginRight: 12 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: COLORS.text, fontWeight: '700', fontSize: 15 }}>{p.name}</Text>
-                      <Text style={{ color: COLORS.textSub, fontSize: 12 }}>
-                        {p.type} · Closeness {p.closeness}/10
+                  {selectedPersonId && (
+                    <View style={gs.card}>
+                      <Text style={[gs.cardTitle, { textAlign: 'center', marginBottom: 16 }]}>
+                        Time spent with {people.find((p) => p.id === selectedPersonId)?.name}
                       </Text>
+                      <View style={fw}>
+                        <TextInput style={gs.input} placeholder="Minutes (e.g. 60)" placeholderTextColor={colors.textSub} keyboardType="numeric" value={minutes} onChangeText={setMinutes} />
+                        <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.soc }]} onPress={logTime}>
+                          <Text style={gs.btnPrimaryText}>Log Time</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                    <TouchableOpacity onPress={() => deletePerson(p.id)}>
-                      <Ionicons name="trash-outline" size={18} color={COLORS.red} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </>
-            )}
-          </>
-        )}
+                  )}
+                </>
+              )}
 
-        <View style={{ height: 30 }} />
+              {todayLogs.length > 0 && (
+                <>
+                  <Text style={gs.sectionTitle}>Today's Social Log</Text>
+                  {todayLogs.map((l) => (
+                    <View key={l.id} style={[gs.card, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+                      <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16, flex: 1 }}>{l.personName}</Text>
+                      <Text style={{ color: colors.soc, fontWeight: '800', fontSize: 18, marginRight: 12 }}>{l.minutes} min</Text>
+                      <TouchableOpacity onPress={() => deleteSocialLog(l.id)} style={{ padding: 4 }}>
+                        <Ionicons name="trash-outline" size={18} color={colors.red} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </>
+              )}
+            </>
+          )}
+
+          {/* ── PEOPLE MANAGEMENT ── */}
+          {activeView === 'people' && (
+            <>
+              <Text style={gs.screenTitle}>People</Text>
+              <Text style={gs.screenSub}>Your social circle</Text>
+
+              <View style={gs.card}>
+                <Text style={[gs.cardTitle, { textAlign: 'center', marginBottom: 16 }]}>Add Person</Text>
+                <View style={fw}>
+                  <TextInput style={gs.input} placeholder="Name" placeholderTextColor={colors.textSub} value={personName} onChangeText={setPersonName} />
+                  <Text style={gs.label}>Type</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                    {PERSON_TYPES.map((t) => (
+                      <TouchableOpacity key={t}
+                        style={[s.typeBtn, { borderColor: colors.border, backgroundColor: colors.surfaceAlt },
+                          personType === t && { backgroundColor: TYPE_COLOR[t] + '22', borderColor: TYPE_COLOR[t] }]}
+                        onPress={() => setPersonType(t)}>
+                        <Ionicons name={TYPE_ICON[t]} size={16} color={personType === t ? TYPE_COLOR[t] : colors.textSub} />
+                        <Text style={[{ fontSize: 14, fontWeight: '600', color: personType === t ? TYPE_COLOR[t] : colors.textSub }]}>{t}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <Text style={gs.label}>Closeness: {closeness}/10</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                    {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                      <TouchableOpacity key={n}
+                        style={[s.scoreBtn, { borderColor: colors.border, backgroundColor: colors.surfaceAlt },
+                          closeness === n && { backgroundColor: colors.soc, borderColor: colors.soc }]}
+                        onPress={() => setCloseness(n)}>
+                        <Text style={[s.scoreBtnText, { color: closeness === n ? '#fff' : colors.textSub }]}>{n}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.soc }]} onPress={addPerson}>
+                    <Text style={gs.btnPrimaryText}>Add Person</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {people.length > 0 && (
+                <>
+                  <Text style={gs.sectionTitle}>Your People ({people.length})</Text>
+                  {people.map((p) => (
+                    <View key={p.id} style={[gs.card, { flexDirection: 'row', alignItems: 'center', gap: 14 }]}>
+                      <View style={[s.personIcon, { backgroundColor: TYPE_COLOR[p.type] + '22' }]}>
+                        <Ionicons name={TYPE_ICON[p.type]} size={22} color={TYPE_COLOR[p.type]} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: colors.text, fontWeight: '700', fontSize: 17 }}>{p.name}</Text>
+                        <Text style={{ color: colors.textSub, fontSize: 14, marginTop: 2 }}>{p.type} · Closeness {p.closeness}/10</Text>
+                      </View>
+                      <TouchableOpacity style={[s.iconBtn, { backgroundColor: colors.redDim }]} onPress={() => deletePerson(p.id)}>
+                        <Ionicons name="trash-outline" size={18} color={colors.red} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </>
+              )}
+            </>
+          )}
+
+          <View style={{ height: 30 }} />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  viewToggle: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    padding: 10,
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 9,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: COLORS.surfaceAlt,
-  },
-  toggleBtnText: {
-    color: COLORS.textSub,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  cardTitle: {
-    color: COLORS.text,
-    fontWeight: '700',
-    fontSize: 15,
-    marginBottom: 12,
-  },
-  typeRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
-    flexWrap: 'wrap',
-  },
-  typeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surfaceAlt,
-  },
-  typeBtnText: {
-    color: COLORS.textSub,
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  scoreBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scoreBtnText: {
-    color: COLORS.textSub,
-    fontWeight: '700',
-    fontSize: 13,
-  },
+const s = StyleSheet.create({
+  viewToggle: { paddingVertical: 10, borderBottomWidth: 1 },
+  toggleBtn: { flex: 1, paddingVertical: 12, borderRadius: 14, alignItems: 'center', borderWidth: 1.5, flexDirection: 'row', justifyContent: 'center', gap: 8 },
+  toggleBtnText: { fontWeight: '700', fontSize: 15 },
+  personIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  typeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5 },
+  scoreBtn: { width: 44, height: 44, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  scoreBtnText: { fontWeight: '700', fontSize: 14 },
 });
