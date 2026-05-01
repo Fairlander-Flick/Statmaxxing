@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ScrollView, Text, View, StyleSheet, RefreshControl, useWindowDimensions, TouchableOpacity, Animated, LogBox, LayoutAnimation, Platform, UIManager } from 'react-native';
+import {
+  ScrollView, Text, View, StyleSheet, RefreshControl,
+  useWindowDimensions, TouchableOpacity, Animated, LogBox,
+  LayoutAnimation, Platform, UIManager,
+} from 'react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -7,11 +11,12 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 LogBox.ignoreLogs([
   'Invalid DOM property `transform-origin`',
-  'Unknown event handler property `onResponderTerminate`'
+  'Unknown event handler property `onResponderTerminate`',
 ]);
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import Svg, { Polygon, Line, Circle, Text as SvgText } from 'react-native-svg';
+import Svg, { Polygon, Line, Circle, Text as SvgText, Defs, LinearGradient, Stop, Path } from 'react-native-svg';
 import { LineChart } from 'react-native-chart-kit';
 import { useTheme, makeGlobalStyles } from '../lib/ThemeContext';
 import { useLayout } from '../lib/useLayout';
@@ -34,18 +39,19 @@ function formatDateDDMMYYYY(dateStr: string): string {
   return `${parts[2]}.${parts[1]}.${parts[0]}`;
 }
 
-// ── SVG Hexagon Chart ──
+// ── SVG Hexagon Chart (Stitch style) ──
 function HexagonChart({
-  stats, size = 280, colors, activeStat, setActiveStat
+  stats, size = 260, colors, activeStat, setActiveStat
 }: {
   stats: Record<StatKey, number>; size?: number; colors: any;
   activeStat: StatKey | null; setActiveStat: (s: StatKey | null) => void;
 }) {
   const center = size / 2;
-  const radius = (size / 2) - 40;
+  const radius = (size / 2) - 44;
 
   const statKeys: StatKey[] = ['STR', 'FOC', 'ART', 'SOC', 'DIS', 'VIT'];
   const statColors = [colors.str, colors.foc, colors.art, colors.soc, colors.dis, colors.vit];
+  const statLabels = ['STR', 'FOC', 'ART', 'SOC', 'DIS', 'VIT'];
 
   const getPoint = (val: number, angle: number) => {
     const r = (val / 100) * radius;
@@ -55,37 +61,73 @@ function HexagonChart({
 
   const points = statKeys.map((key) => getPoint(stats[key], statKeys.indexOf(key) * 60));
   const polyPoints = points.map((p) => `${p.x},${p.y}`).join(' ');
-  const webs = [20, 40, 60, 80, 100].map((v) => statKeys.map((_, i) => getPoint(v, i * 60)).map((p) => `${p.x},${p.y}`).join(' '));
+  const webs = [25, 50, 75, 100].map((v) =>
+    statKeys.map((_, i) => getPoint(v, i * 60)).map((p) => `${p.x},${p.y}`).join(' ')
+  );
 
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size, alignSelf: 'center' }}>
       <Svg width={size} height={size}>
-        {webs.map((pts, i) => <Polygon key={`web-${i}`} points={pts} stroke={colors.border} strokeWidth="1" fill="none" />)}
+        {/* Web rings */}
+        {webs.map((pts, i) => (
+          <Polygon key={`web-${i}`} points={pts} stroke="rgba(255,255,255,0.06)" strokeWidth="1" fill="none" />
+        ))}
+        {/* Axis lines */}
         {statKeys.map((_, i) => {
           const p = getPoint(100, i * 60);
-          return <Line key={`axis-${i}`} x1={center} y1={center} x2={p.x} y2={p.y} stroke={colors.border} strokeWidth="1" />;
+          return <Line key={`axis-${i}`} x1={center} y1={center} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />;
         })}
-        <Polygon points={polyPoints} fill={colors.accent + '33'} stroke={colors.accent} strokeWidth="4" strokeLinejoin="round" />
-        {points.map((p, i) => <Circle key={`pt-${i}`} cx={p.x} cy={p.y} r="5" fill={statColors[i]} />)}
+        {/* Data fill with gradient glow */}
+        <Polygon
+          points={polyPoints}
+          fill="rgba(99,102,241,0.22)"
+          stroke="#6366F1"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        {/* Vertex dots */}
+        {points.map((p, i) => (
+          <Circle key={`pt-${i}`} cx={p.x} cy={p.y} r="4" fill={statColors[i]} />
+        ))}
+        {/* Labels */}
         {statKeys.map((key, i) => {
-          const p = getPoint(125, i * 60);
+          const p = getPoint(130, i * 60);
           const isActive = activeStat === key;
           return (
-            <SvgText key={`lbl-${i}`} x={p.x} y={p.y + 5} fill={isActive ? colors.text : statColors[i]} fontSize={isActive ? "16" : "13"} fontWeight="900" fontFamily="system-ui, -apple-system, sans-serif" textAnchor="middle">
-              {key}
+            <SvgText
+              key={`lbl-${i}`}
+              x={p.x} y={p.y + 5}
+              fill={isActive ? '#ffffff' : 'rgba(199,196,215,0.8)'}
+              fontSize={isActive ? '13' : '11'}
+              fontWeight="700"
+              fontFamily="system-ui, -apple-system, sans-serif"
+              textAnchor="middle"
+            >
+              {statLabels[i]}
             </SvgText>
           );
         })}
       </Svg>
 
+      {/* Hit areas */}
       {statKeys.map((key, i) => {
         const pHit = getPoint(100, i * 60);
         return (
-          <TouchableOpacity key={`hit-${i}`} onPress={() => {
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            setActiveStat(activeStat === key ? null : key);
-          }}
-            style={{ position: 'absolute', left: pHit.x - 45, top: pHit.y - 45, width: 90, height: 90, borderRadius: 45, zIndex: 10 }}
+          <TouchableOpacity
+            key={`hit-${i}`}
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setActiveStat(activeStat === key ? null : key);
+            }}
+            style={{
+              position: 'absolute',
+              left: pHit.x - 40,
+              top: pHit.y - 40,
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              zIndex: 10,
+            }}
           />
         );
       })}
@@ -93,29 +135,61 @@ function HexagonChart({
   );
 }
 
-// ── Today row ──
-function TodayRow({ icon, label, value, color }: {
-  icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: string; color: string;
+// ── Stat attribute card ──
+function AttributeCard({ statKey, value, color, isActive, onPress }: {
+  statKey: string; value: number; color: string; isActive: boolean; onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  const statIcons: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+    VIT: 'heart', STR: 'barbell-outline', FOC: 'timer-outline', ART: 'brush-outline', SOC: 'chatbubbles-outline', DIS: 'shield-checkmark-outline',
+  };
+  const statNames: Record<string, string> = {
+    VIT: 'Vitality', STR: 'Strength', FOC: 'Focus', ART: 'Creative', SOC: 'Social', DIS: 'Discipline',
+  };
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[s.attrCard, {
+        backgroundColor: isActive ? color + '22' : colors.surface,
+        borderColor: isActive ? color + '60' : colors.border,
+      }]}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={[s.attrIconWrap, { backgroundColor: color + '20' }]}>
+          <Ionicons name={statIcons[statKey] ?? 'star'} size={14} color={color} />
+        </View>
+        <Text style={[s.attrLabel, { color: colors.textMuted }]}>{statNames[statKey]}</Text>
+      </View>
+      <Text style={[s.attrValue, { color: isActive ? color : colors.text }]}>{value}</Text>
+      <View style={[s.attrBar, { backgroundColor: colors.border }]}>
+        <View style={[s.attrBarFill, { width: `${value}%` as any, backgroundColor: color }]} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ── Today Stat Row (Stitch style) ──
+function StatRow({ icon, label, value, color, subValue }: {
+  icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: string;
+  color: string; subValue?: string;
 }) {
   const { colors } = useTheme();
   return (
-    <View style={[todayRowStyles.row, { borderBottomColor: colors.border }]}>
-      <View style={[todayRowStyles.iconWrap, { backgroundColor: color + '18' }]}><Ionicons name={icon} size={15} color={color} /></View>
-      <Text style={[todayRowStyles.label, { color: colors.textSub }]}>{label}</Text>
-      <Text style={[todayRowStyles.value, { color: colors.text }]}>{value}</Text>
+    <View style={[s.statRow, { borderBottomColor: colors.border }]}>
+      <View style={[s.statIconWrap, { backgroundColor: color + '18' }]}>
+        <Ionicons name={icon} size={16} color={color} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[s.statLabel, { color: colors.textMuted }]}>{label}</Text>
+        {subValue ? <Text style={[s.statSub, { color: colors.textSub }]}>{subValue}</Text> : null}
+      </View>
+      <Text style={[s.statValue, { color: colors.text }]}>{value}</Text>
     </View>
   );
 }
 
-const todayRowStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
-  iconWrap: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  label: { flex: 1, fontSize: 14 },
-  value: { fontWeight: '700', fontSize: 14 },
-});
-
 export default function DashboardScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, toggleTheme } = useTheme();
   const layout = useLayout();
   const { width } = useWindowDimensions();
   const gs = makeGlobalStyles(colors);
@@ -129,77 +203,52 @@ export default function DashboardScreen() {
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Trigger animation when active history data mounts
   useEffect(() => {
     if (activeStatHistory) {
       fadeAnim.setValue(0);
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }).start();
+      Animated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
     }
   }, [activeStatHistory]);
 
-  const [selectedWeekIndex, setSelectedWeekIndex] = useState<number>(51); // 0 = 51 weeks ago, 51 = this week.
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState<number>(51);
   const [weeklyHeatmap, setWeeklyHeatmap] = useState<number[]>([]);
 
   const [todaySummary, setTodaySummary] = useState<{
-    sleep: number | null; water: number; waterGoal: number; workouts: number; mindMins: number; socialMins: number; calories: number; weight: number | null; steps: number;
+    sleep: number | null; water: number; waterGoal: number; workouts: number;
+    mindMins: number; socialMins: number; calories: number; weight: number | null; steps: number;
   }>({ sleep: null, water: 0, waterGoal: 2500, workouts: 0, mindMins: 0, socialMins: 0, calories: 0, weight: null, steps: 0 });
+
   const [weeklySummary, setWeeklySummary] = useState<{
-    sleepHrs: number; waterMl: number; workouts: number; mindMins: number; socialMins: number; calories: number; weightDiff: number; steps: number;
+    sleepHrs: number; waterMl: number; workouts: number; mindMins: number;
+    socialMins: number; calories: number; weightDiff: number; steps: number;
   }>({ sleepHrs: 0, waterMl: 0, workouts: 0, mindMins: 0, socialMins: 0, calories: 0, weightDiff: 0, steps: 0 });
 
   const [refreshing, setRefreshing] = useState(false);
   const today = toDay();
 
-  const mockPeriods = [
-    { value: 7, label: '7D' }, { value: 14, label: '14D' }, { value: 30, label: '1M' }, { value: 365, label: '1Y' }, { value: 1825, label: '5Y' }
+  const periods = [
+    { value: 7, label: '7D' }, { value: 14, label: '14D' },
+    { value: 30, label: '1M' }, { value: 365, label: '1Y' },
   ];
 
-  // ── XP Calculation ──────────────────────────────────────────────────────────
-  // Each stat accumulates XP from relevant logs. The XP amounts are calibrated
-  // so that consistent daily effort over weeks → scores in the 30-60 range.
-  // Reaching 80+ requires months of near-perfect habit adherence.
   const calcXp = (
     sleepLogs: SleepLog[], waterLogs: WaterLog[], workoutLogs: WorkoutLog[],
     stepLogs: StepLog[], mindLogs: MindLog[], socialLogs: SocialLog[], uniqueDates: string[]
   ) => {
-    // VIT: sleep quality + hydration + steps (diminishing daily caps)
-    const vitSleep = sleepLogs.reduce((s, l) => s + Math.min(l.hours, 9) * 12, 0); // max ~108/day
-    const vitWater = waterLogs.reduce((s, l) => s + Math.min(l.totalMl, 3500) * 0.008, 0); // max ~28/day
-    const vitSteps = stepLogs.reduce((s, l) => s + Math.min(l.steps, 15000) * 0.003, 0); // max ~45/day
+    const vitSleep = sleepLogs.reduce((s, l) => s + Math.min(l.hours, 9) * 12, 0);
+    const vitWater = waterLogs.reduce((s, l) => s + Math.min(l.totalMl, 3500) * 0.008, 0);
+    const vitSteps = stepLogs.reduce((s, l) => s + Math.min(l.steps, 15000) * 0.003, 0);
     const vit = vitSleep + vitWater + vitSteps;
-
-    // STR: workouts + steps bonus (capped per session)
-    const strWorkout = workoutLogs.reduce((s, l) => s + 150, 0); // flat 150 XP per session
-    const strSteps = stepLogs.reduce((s, l) => s + Math.min(l.steps, 10000) * 0.002, 0); // bonus for walking
+    const strWorkout = workoutLogs.reduce((s) => s + 150, 0);
+    const strSteps = stepLogs.reduce((s, l) => s + Math.min(l.steps, 10000) * 0.002, 0);
     const str = strWorkout + strSteps;
-
-    // FOC: dedicated focus/study sessions
-    const foc = mindLogs
-      .filter(l => l.statBoost === 'FOC')
-      .reduce((s, l) => s + Math.min(l.durationMinutes, 120) * 1.5, 0); // cap at 2h/day = 180 XP
-
-    // ART: creative/art practice
-    const art = mindLogs
-      .filter(l => l.statBoost === 'ART')
-      .reduce((s, l) => s + Math.min(l.durationMinutes, 120) * 1.5, 0);
-
-    // SOC: social engagement time
-    const soc = socialLogs.reduce((s, l) => s + Math.min(l.minutes, 180) * 1.2, 0); // cap 3h/day
-
-    // DIS: consistency — unique active days (hardest to fake, best long-term signal)
-    const dis = uniqueDates.length * 80; // 80 XP per active day
-
+    const foc = mindLogs.filter(l => l.statBoost === 'FOC').reduce((s, l) => s + Math.min(l.durationMinutes, 120) * 1.5, 0);
+    const art = mindLogs.filter(l => l.statBoost === 'ART').reduce((s, l) => s + Math.min(l.durationMinutes, 120) * 1.5, 0);
+    const soc = socialLogs.reduce((s, l) => s + Math.min(l.minutes, 180) * 1.2, 0);
+    const dis = uniqueDates.length * 80;
     return { VIT: vit, STR: str, FOC: foc, ART: art, SOC: soc, DIS: dis };
   };
 
-  // ── Stat Score (Sigmoid) ────────────────────────────────────────────────────
-  // score(xp) = 1 + 99 * (1 - e^(-xp/k))
-  // k = 80000 means: score ~50 at 55k XP, score ~75 at 110k XP, score ~90 at 184k XP
-  // This means even a power user needs ~6 months of daily effort to see 80+.
   const getSigmoidStat = (xpAmount: number) => {
     const k = 80000;
     return Math.max(1, Math.min(100, Math.round(1 + 99 * (1 - Math.exp(-xpAmount / k)))));
@@ -208,9 +257,11 @@ export default function DashboardScreen() {
   const computeStats = useCallback(async () => {
     const [sleepLogs, waterLogs, waterGoal, weightLogs, workoutLogs, mindLogs, socialLogs, nutritionLogs, stepLogs] =
       await Promise.all([
-        loadData<SleepLog[]>(KEYS.sleepLogs, []), loadData<WaterLog[]>(KEYS.waterLogs, []), loadData<number>(KEYS.waterGoal, 2500),
-        loadData<WeightLog[]>(KEYS.weightLogs, []), loadData<WorkoutLog[]>(KEYS.workoutLogs, []), loadData<MindLog[]>(KEYS.mindLogs, []),
-        loadData<SocialLog[]>(KEYS.socialLogs, []), loadData<NutritionLog[]>(KEYS.nutritionLogs, []), loadData<StepLog[]>(KEYS.stepLogs, []),
+        loadData<SleepLog[]>(KEYS.sleepLogs, []), loadData<WaterLog[]>(KEYS.waterLogs, []),
+        loadData<number>(KEYS.waterGoal, 2500), loadData<WeightLog[]>(KEYS.weightLogs, []),
+        loadData<WorkoutLog[]>(KEYS.workoutLogs, []), loadData<MindLog[]>(KEYS.mindLogs, []),
+        loadData<SocialLog[]>(KEYS.socialLogs, []), loadData<NutritionLog[]>(KEYS.nutritionLogs, []),
+        loadData<StepLog[]>(KEYS.stepLogs, []),
       ]);
 
     const tSleep = sleepLogs.find((l) => l.date === today)?.hours ?? null;
@@ -223,7 +274,7 @@ export default function DashboardScreen() {
     const tSteps = stepLogs.find((l) => l.date === today)?.steps ?? 0;
     setTodaySummary({ sleep: tSleep, water: tWater, waterGoal, workouts: tWork, mindMins: tMind, socialMins: tSoc, calories: tCal, weight: tWeight, steps: tSteps });
 
-    const uniqueDates = [...new Set([...sleepLogs, ...waterLogs, ...workoutLogs, ...mindLogs, ...socialLogs, ...stepLogs].map(l=>l.date))];
+    const uniqueDates = [...new Set([...sleepLogs, ...waterLogs, ...workoutLogs, ...mindLogs, ...socialLogs, ...stepLogs].map(l => l.date))];
     const totalXps = calcXp(sleepLogs, waterLogs, workoutLogs, stepLogs, mindLogs, socialLogs, uniqueDates);
     const newStats = {
       VIT: getSigmoidStat(totalXps.VIT), STR: getSigmoidStat(totalXps.STR), FOC: getSigmoidStat(totalXps.FOC),
@@ -231,18 +282,16 @@ export default function DashboardScreen() {
     };
     setStats(newStats);
 
-    const sumXp = Object.values(totalXps).reduce((s,v)=>s+v, 0);
+    const sumXp = Object.values(totalXps).reduce((s, v) => s + v, 0);
     setLevel(Math.floor(sumXp / 1000) + 1);
     setXp(Math.round(sumXp % 1000));
 
-    // 52-Week Logic & Dynamic Weekly Summary
+    // Weekly summary
     const daysAgoStart = (51 - selectedWeekIndex) * 7;
     const daysAgoEnd = daysAgoStart + 7;
-    
     const weekStartStr = getDateBefore(daysAgoEnd);
     const weekEndStr = getDateBefore(daysAgoStart);
-    
-    const flt = (l: {date: string}) => l.date > weekStartStr && l.date <= weekEndStr;
+    const flt = (l: { date: string }) => l.date > weekStartStr && l.date <= weekEndStr;
     const wSleep = sleepLogs.filter(flt);
     const wWater = waterLogs.filter(flt);
     const wWork = workoutLogs.filter(flt);
@@ -250,53 +299,50 @@ export default function DashboardScreen() {
     const wMind = mindLogs.filter(flt);
     const wSoc = socialLogs.filter(flt);
     const wNut = nutritionLogs.filter(flt);
-    
     let wDiff = 0;
-    const wWeightLogs = weightLogs.filter(flt).sort((a,b)=>a.date.localeCompare(b.date));
-    if (wWeightLogs.length >= 2) wDiff = wWeightLogs[wWeightLogs.length-1].kg - wWeightLogs[0].kg;
-
+    const wWeightLogs = weightLogs.filter(flt).sort((a, b) => a.date.localeCompare(b.date));
+    if (wWeightLogs.length >= 2) wDiff = wWeightLogs[wWeightLogs.length - 1].kg - wWeightLogs[0].kg;
     setWeeklySummary({
-      sleepHrs: wSleep.reduce((s,l)=>s+l.hours,0), waterMl: wWater.reduce((s,l)=>s+l.totalMl,0), workouts: wWork.length,
-      mindMins: wMind.reduce((s,l)=>s+l.durationMinutes,0), socialMins: wSoc.reduce((s,l)=>s+l.minutes,0),
-      calories: wNut.reduce((s,l)=>s+l.macros.calories,0), weightDiff: wDiff, steps: wStep.reduce((s,l)=>s+l.steps,0),
+      sleepHrs: wSleep.reduce((s, l) => s + l.hours, 0),
+      waterMl: wWater.reduce((s, l) => s + l.totalMl, 0),
+      workouts: wWork.length,
+      mindMins: wMind.reduce((s, l) => s + l.durationMinutes, 0),
+      socialMins: wSoc.reduce((s, l) => s + l.minutes, 0),
+      calories: wNut.reduce((s, l) => s + l.macros.calories, 0),
+      weightDiff: wDiff,
+      steps: wStep.reduce((s, l) => s + l.steps, 0),
     });
 
-    // Populate the 52-week Activity Heatmap
+    // Heatmap
     let hMap = new Array(52).fill(0);
     const todayNum = new Date(today).getTime();
-    const assignToWeek = (logs: {date: string}[], getVal: (log: any) => number) => {
-       logs.forEach(l => {
-          const diffTime = todayNum - new Date(l.date).getTime();
-          const daysAgo = Math.floor((diffTime || 0) / (1000 * 3600 * 24));
-          const wIndex = 51 - Math.floor(daysAgo / 7);
-          if (wIndex >= 0 && wIndex <= 51) hMap[wIndex] += getVal(l);
-       });
+    const assignToWeek = (logs: { date: string }[], getVal: (log: any) => number) => {
+      logs.forEach(l => {
+        const diffTime = todayNum - new Date(l.date).getTime();
+        const daysAgo = Math.floor((diffTime || 0) / (1000 * 3600 * 24));
+        const wIndex = 51 - Math.floor(daysAgo / 7);
+        if (wIndex >= 0 && wIndex <= 51) hMap[wIndex] += getVal(l);
+      });
     };
-
     assignToWeek(sleepLogs, l => l.hours * 10);
     assignToWeek(waterLogs, l => l.totalMl * 0.015);
     assignToWeek(workoutLogs, () => 100);
     assignToWeek(stepLogs, l => l.steps * 0.015);
     assignToWeek(mindLogs, l => l.durationMinutes * 1);
     assignToWeek(socialLogs, l => l.minutes * 1);
-    
-    // Normalize heatmap for opacity 0.15 to 1.0
     const mXP = Math.max(1, ...hMap);
     setWeeklyHeatmap(hMap.map(val => val / mXP));
 
-    // Generate active component history curve
+    // History line chart
     if (activeStat) {
       let historyLabels: string[] = [];
       let historyData: number[] = [];
       const now = new Date();
-      // Downsample effectively to max ~14 points for performance
       const step = Math.max(1, Math.ceil(activeStatPeriod / 14));
-      
       for (let i = activeStatPeriod; i >= 0; i -= step) {
         let cutoff = new Date(now);
         cutoff.setDate(cutoff.getDate() - i);
         let cutoffStr = cutoff.toISOString().split('T')[0];
-        
         const hSleep = sleepLogs.filter(l => l.date <= cutoffStr);
         const hWater = waterLogs.filter(l => l.date <= cutoffStr);
         const hWork = workoutLogs.filter(l => l.date <= cutoffStr);
@@ -304,23 +350,15 @@ export default function DashboardScreen() {
         const hMind = mindLogs.filter(l => l.date <= cutoffStr);
         const hSoc = socialLogs.filter(l => l.date <= cutoffStr);
         const hUnique = [...new Set([...hSleep, ...hWater, ...hWork, ...hMind, ...hSoc, ...hStep].map(l => l.date))];
-        
         const hXps = calcXp(hSleep, hWater, hWork, hStep, hMind, hSoc, hUnique);
         historyLabels.push(i === 0 ? 'Today' : `-${i}d`);
         historyData.push(getSigmoidStat(hXps[activeStat]));
       }
-
-      // Sometimes array is sparse if user generated no data, react-native-chart-kit crashes on identical Ys or empty
-      if (historyData.length < 2) {
-         historyLabels = ['...', 'Today'];
-         historyData = [1, newStats[activeStat]];
-      }
-
+      if (historyData.length < 2) { historyLabels = ['...', 'Today']; historyData = [1, newStats[activeStat]]; }
       setActiveStatHistory({ labels: historyLabels, data: historyData });
     } else {
       setActiveStatHistory(null);
     }
-
   }, [today, activeStat, activeStatPeriod, selectedWeekIndex]);
 
   useEffect(() => { computeStats(); }, [computeStats]);
@@ -332,154 +370,258 @@ export default function DashboardScreen() {
   }, [computeStats]);
 
   const xpPct = Math.min((xp / 1000) * 100, 100);
-  const chartColors = { VIT: colors.vit, STR: colors.str, FOC: colors.foc, ART: colors.art, SOC: colors.soc, DIS: colors.dis };
+  const chartColor = activeStat ? { VIT: colors.vit, STR: colors.str, FOC: colors.foc, ART: colors.art, SOC: colors.soc, DIS: colors.dis }[activeStat] : colors.accent;
 
-  const monthLabels = Array.from({length: 12}).map((_, i) => {
+  const monthLabels = Array.from({ length: 12 }).map((_, i) => {
     const d = new Date();
     d.setMonth(d.getMonth() - (11 - i));
     return d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
   });
-  const gridDist = [4,4,5,4,4,5,4,4,5,4,4,5]; 
+  const gridDist = [4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5];
   let pointer = 0;
   const gridData = gridDist.map(size => {
-     const weeks = [];
-     for(let i=0; i<size; i++) weeks.push(pointer++);
-     return weeks;
+    const weeks = [];
+    for (let i = 0; i < size; i++) weeks.push(pointer++);
+    return weeks;
   });
+
+  const statKeys: StatKey[] = ['VIT', 'STR', 'FOC', 'ART', 'SOC', 'DIS'];
+  const statColors = { VIT: colors.vit, STR: colors.str, FOC: colors.foc, ART: colors.art, SOC: colors.soc, DIS: colors.dis };
+
+  // Determine greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView style={gs.container} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />} contentContainerStyle={{ alignItems: 'center' }}>
-        <View style={{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 24 }}>
-          
-          <Text style={gs.screenTitle}>Statmaxxing</Text>
-          <Text style={gs.screenSub}>Lifetime RPG dashboard · Pull to refresh</Text>
+      {/* ── Header ── */}
+      <View style={[s.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+        <View>
+          <Text style={[s.headerSub, { color: colors.textMuted }]}>TECHNICAL ATHLETE</Text>
+          <Text style={[s.headerTitle, { color: colors.text }]}>StatsEngine</Text>
+        </View>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <TouchableOpacity
+            style={[s.headerBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={toggleTheme}
+          >
+            <Ionicons name={isDark ? 'sunny' : 'moon'} size={18} color={colors.textSub} />
+          </TouchableOpacity>
+          <View style={[s.avatarRing, { borderColor: colors.accent }]}>
+            <View style={[s.avatarInner, { backgroundColor: colors.accent + '40' }]}>
+              <Ionicons name="person" size={16} color={colors.accent} />
+            </View>
+          </View>
+        </View>
+      </View>
 
-          <View style={[gs.card, { backgroundColor: isDark ? '#0f0f0f' : colors.surface, borderColor: colors.accent + '40', marginBottom: 16 }]}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14 }}>
+      <ScrollView
+        style={gs.container}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
+        contentContainerStyle={{ paddingBottom: 32 }}
+      >
+        <View style={{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20, alignSelf: 'center' }}>
+
+          {/* ── Greeting ── */}
+          <Text style={[s.greeting, { color: colors.text }]}>{greeting} 👋</Text>
+          <Text style={[s.greetingDate, { color: colors.textSub }]}>
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </Text>
+
+          {/* ── Level / XP Hero Card ── */}
+          <View style={[s.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {/* Glow accent */}
+            <View style={s.heroGlow} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
               <View>
-                <Text style={{ color: colors.textSub, fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>Lifetime Level</Text>
-                <Text style={{ color: colors.text, fontSize: 48, fontWeight: '900', lineHeight: 52, letterSpacing: -2 }}>{level}</Text>
+                <Text style={[s.heroLevelLabel, { color: colors.textMuted }]}>LIFETIME LEVEL</Text>
+                <Text style={[s.heroLevel, { color: colors.text }]}>{level}</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ color: colors.textSub, fontSize: 12 }}>{xp} / 1000 XP</Text>
-                <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '700', marginTop: 2 }}>{1000 - xp} to Level {level + 1}</Text>
+                <View style={[gs.pill, { marginBottom: 4 }]}>
+                  <Text style={gs.pillText}>Elite Class</Text>
+                </View>
+                <Text style={[s.heroXpSub, { color: colors.textSub }]}>{xp} / 1000 XP</Text>
               </View>
             </View>
-            <View style={{ height: 6, backgroundColor: colors.surfaceAlt, borderRadius: 3, overflow: 'hidden' }}>
-              <View style={{ height: '100%', width: `${xpPct}%` as any, backgroundColor: colors.accent, borderRadius: 3 }} />
+            {/* XP bar */}
+            <View style={[s.xpBarTrack, { backgroundColor: colors.border }]}>
+              <View style={[s.xpBarFill, { width: `${xpPct}%` as any, backgroundColor: colors.accent }]} />
+            </View>
+            {/* Week dots */}
+            <View style={s.weekDots}>
+              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => {
+                const isToday = i === new Date().getDay() - 1;
+                return (
+                  <View key={i} style={s.weekDotCol}>
+                    <View style={[s.weekDot, {
+                      backgroundColor: i < (new Date().getDay() - 1) ? colors.accent : (isToday ? colors.accentDim : colors.border),
+                      borderColor: isToday ? colors.accent : 'transparent',
+                      borderWidth: isToday ? 1.5 : 0,
+                    }]} />
+                    <Text style={[s.weekDotLabel, { color: isToday ? colors.accent : colors.textMuted }]}>{d}</Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
 
-          {/* ── CORE ATTRIBUTES FLEX CONTAINER ── */}
-          <Text style={gs.sectionTitle}>Core Attributes</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
-            {/* HEXAGON */}
-            <View style={[gs.card, { paddingVertical: 24, flex: 1, minWidth: 280, alignItems: 'center' }]}>
-              <HexagonChart stats={stats} colors={colors} activeStat={activeStat} setActiveStat={setActiveStat} />
-              <Text style={{ color: colors.textSub, fontSize: 12, marginTop: 12, fontStyle: 'italic', textAlign: 'center' }}>Tap an attribute to reveal history</Text>
-            </View>
-
-            {/* CHART CONTEXT (Only rendered if an activeStat is chosen) */}
-            {activeStat && (
-              <Animated.View style={[gs.card, { flex: 1, minWidth: 320, padding: 16, opacity: fadeAnim }]}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                   <View>
-                     <Text style={{ fontSize: 24, fontWeight: '900', color: chartColors[activeStat] }}>{activeStat} {stats[activeStat]}</Text>
-                     <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSub, textTransform: 'uppercase', letterSpacing: 1 }}>Score Progression</Text>
-                   </View>
-                   <TouchableOpacity onPress={() => {
-                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                     setActiveStat(null);
-                   }} style={{ padding: 6, backgroundColor: colors.surfaceAlt, borderRadius: 20 }}>
-                     <Ionicons name="close" size={20} color={colors.textSub} />
-                   </TouchableOpacity>
-                </View>
-
-                {/* Period Selector */}
-                <View style={{ flexDirection: 'row', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-                  {mockPeriods.map((p) => (
-                    <TouchableOpacity key={p.value} onPress={() => setActiveStatPeriod(p.value)}
-                      style={{
-                        paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1,
-                        borderColor: activeStatPeriod === p.value ? chartColors[activeStat] : colors.border,
-                        backgroundColor: activeStatPeriod === p.value ? chartColors[activeStat] + '22' : colors.surfaceAlt
-                      }}>
-                      <Text style={{ color: activeStatPeriod === p.value ? chartColors[activeStat] : colors.textSub, fontSize: 11, fontWeight: '700' }}>{p.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {/* Line Chart Component */}
-                {activeStatHistory && (
-                  <View style={{ marginTop: 8, borderRadius: 16, overflow: 'hidden' }}>
-                    <LineChart
-                      data={{
-                        labels: activeStatHistory.labels.map((l, i) => i === 0 || i === activeStatHistory.labels.length - 1 ? l : ''),
-                        datasets: [{ data: activeStatHistory.data }],
-                      }}
-                      width={Math.min(width - layout.hPadding * 2 - 32, 600)} 
-                      height={200}
-                      chartConfig={{
-                        backgroundColor: colors.surface, backgroundGradientFrom: colors.surface, backgroundGradientTo: colors.surface,
-                        decimalPlaces: 0, 
-                        color: (opacity = 1) => {
-                          const hex = chartColors[activeStat].replace('#', '');
-                          const r = parseInt(hex.substring(0,2), 16) || 0;
-                          const g = parseInt(hex.substring(2,4), 16) || 0;
-                          const b = parseInt(hex.substring(4,6), 16) || 0;
-                          return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-                        },
-                        labelColor: () => colors.textSub,
-                        propsForDots: { r: '4', strokeWidth: '0', fill: chartColors[activeStat] },
-                        propsForBackgroundLines: { stroke: colors.border }
-                      }}
-                      bezier
-                      fromZero={false}
-                      withInnerLines={false}
-                      withDots={false}
-                    />
+          {/* ── Today's Overview Cards ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Today's Overview</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -layout.hPadding }} contentContainerStyle={{ paddingHorizontal: layout.hPadding, gap: 10 }}>
+            {[
+              { icon: 'trending-up' as const, label: 'Steps', value: todaySummary.steps.toLocaleString(), color: colors.str, tag: todaySummary.steps > 8000 ? 'Great' : 'Active' },
+              { icon: 'moon' as const, label: 'Sleep', value: `${todaySummary.sleep ?? 0}h`, color: colors.vit, tag: (todaySummary.sleep ?? 0) >= 7 ? 'Optimal' : 'Track' },
+              { icon: 'water' as const, label: 'Water', value: `${(todaySummary.water / 1000).toFixed(1)}L`, color: colors.foc, tag: todaySummary.water < 1500 ? 'Low' : 'Good' },
+              { icon: 'nutrition' as const, label: 'Calories', value: `${Math.round(todaySummary.calories)} kcal`, color: colors.orange, tag: 'Log' },
+              { icon: 'timer' as const, label: 'Focus', value: `${todaySummary.mindMins}m`, color: colors.art, tag: todaySummary.mindMins > 60 ? 'High' : 'Active' },
+            ].map((item, i) => (
+              <View key={i} style={[s.overviewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <View style={[s.overviewIconWrap, { backgroundColor: item.color + '20' }]}>
+                    <Ionicons name={item.icon} size={18} color={item.color} />
                   </View>
-                )}
-              </Animated.View>
+                  <Text style={[s.overviewTag, { color: item.color }]}>{item.tag}</Text>
+                </View>
+                <Text style={[s.overviewValue, { color: colors.text }]}>{item.value}</Text>
+                <Text style={[s.overviewLabel, { color: colors.textMuted }]}>{item.label}</Text>
+              </View>
+            ))}
+          </ScrollView>
+
+          {/* ── Performance Radar (RPG Centerpiece) ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 20 }]}>Performance Radar</Text>
+          <View style={[gs.card, { alignItems: 'center', paddingVertical: 28 }]}>
+            <HexagonChart stats={stats} colors={colors} activeStat={activeStat} setActiveStat={(key) => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setActiveStat(activeStat === key ? null : key);
+            }} />
+            {!activeStat && (
+              <Text style={[s.radarHint, { color: colors.textMuted }]}>Tap an attribute to see history</Text>
             )}
           </View>
 
-          {/* ── Today Summary ── */}
-          <Text style={gs.sectionTitle}>Today</Text>
-          <View style={[gs.card, { marginBottom: 16 }]}>
-            <TodayRow icon="footsteps" label="Steps" value={`${todaySummary.steps}`} color={colors.str} />
-            <TodayRow icon="moon" label="Sleep" value={`${todaySummary.sleep ?? 0}h`} color={colors.art} />
-            <TodayRow icon="water" label="Water" value={`${todaySummary.water} ml`} color={colors.foc} />
-            <TodayRow icon="restaurant" label="Calories" value={`${todaySummary.calories.toFixed(0)} kcal`} color={colors.str} />
-            <TodayRow icon="barbell" label="Workouts" value={`${todaySummary.workouts} session`} color={colors.str} />
-            <TodayRow icon="flash" label="Focus" value={`${todaySummary.mindMins} min`} color={colors.foc} />
-            <TodayRow icon="people" label="Social" value={`${todaySummary.socialMins} min`} color={colors.soc} />
+          {/* ── Attribute Cards 2×3 Grid ── */}
+          <View style={s.attrGrid}>
+            {statKeys.map((key) => (
+              <AttributeCard
+                key={key}
+                statKey={key}
+                value={stats[key]}
+                color={statColors[key]}
+                isActive={activeStat === key}
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setActiveStat(activeStat === key ? null : key);
+                }}
+              />
+            ))}
           </View>
 
-          {/* ── Yearly Overview (GitHub Grid) ── */}
-          <Text style={gs.sectionTitle}>Yearly Activity</Text>
-          <View style={[gs.card, { paddingVertical: 18, marginBottom: 16 }]}>
+          {/* ── Stat History Chart (when stat selected) ── */}
+          {activeStat && activeStatHistory && (
+            <Animated.View style={[gs.card, { opacity: fadeAnim, padding: 16 }]}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <View>
+                  <Text style={[s.chartStatName, { color: chartColor }]}>
+                    {activeStat} · {stats[activeStat]}
+                  </Text>
+                  <Text style={[s.chartStatSub, { color: colors.textMuted }]}>SCORE PROGRESSION</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setActiveStat(null); }}
+                  style={[s.closeBtn, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                >
+                  <Ionicons name="close" size={16} color={colors.textSub} />
+                </TouchableOpacity>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+                {periods.map((p) => (
+                  <TouchableOpacity
+                    key={p.value}
+                    onPress={() => setActiveStatPeriod(p.value)}
+                    style={[s.periodBtn, {
+                      backgroundColor: activeStatPeriod === p.value ? chartColor + '22' : colors.surfaceAlt,
+                      borderColor: activeStatPeriod === p.value ? chartColor : colors.border,
+                    }]}
+                  >
+                    <Text style={[s.periodBtnText, { color: activeStatPeriod === p.value ? chartColor : colors.textSub }]}>
+                      {p.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={{ borderRadius: 12, overflow: 'hidden' }}>
+                <LineChart
+                  data={{
+                    labels: activeStatHistory.labels.map((l, i) =>
+                      i === 0 || i === activeStatHistory.labels.length - 1 ? l : ''
+                    ),
+                    datasets: [{ data: activeStatHistory.data }],
+                  }}
+                  width={Math.min(width - layout.hPadding * 2 - 40, 600)}
+                  height={180}
+                  chartConfig={{
+                    backgroundColor: colors.surface,
+                    backgroundGradientFrom: colors.surface,
+                    backgroundGradientTo: colors.surface,
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => {
+                      const hex = chartColor.replace('#', '');
+                      const r = parseInt(hex.substring(0, 2), 16) || 99;
+                      const g = parseInt(hex.substring(2, 4), 16) || 102;
+                      const b = parseInt(hex.substring(4, 6), 16) || 241;
+                      return `rgba(${r},${g},${b},${opacity})`;
+                    },
+                    labelColor: () => colors.textMuted,
+                    propsForDots: { r: '3', strokeWidth: '0', fill: chartColor },
+                    propsForBackgroundLines: { stroke: colors.border },
+                  }}
+                  bezier
+                  fromZero={false}
+                  withInnerLines={false}
+                  withDots={false}
+                />
+              </View>
+            </Animated.View>
+          )}
+
+          {/* ── Today's Stats ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Today</Text>
+          <View style={gs.card}>
+            <StatRow icon="trending-up" label="Steps" value={`${todaySummary.steps.toLocaleString()}`} color={colors.str} />
+            <StatRow icon="moon" label="Sleep" value={`${todaySummary.sleep ?? 0}h`} color={colors.vit} subValue={todaySummary.sleep ? 'Logged' : 'Not logged'} />
+            <StatRow icon="water" label="Water" value={`${todaySummary.water} ml`} color={colors.foc} subValue={`Goal: ${todaySummary.waterGoal} ml`} />
+            <StatRow icon="nutrition" label="Calories" value={`${todaySummary.calories.toFixed(0)} kcal`} color={colors.orange} />
+            <StatRow icon="barbell" label="Workouts" value={`${todaySummary.workouts} session${todaySummary.workouts !== 1 ? 's' : ''}`} color={colors.str} />
+            <StatRow icon="timer" label="Focus" value={`${todaySummary.mindMins} min`} color={colors.art} />
+            <StatRow icon="chatbubbles" label="Social" value={`${todaySummary.socialMins} min`} color={colors.soc} />
+          </View>
+
+          {/* ── Yearly Activity Heatmap ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Yearly Activity</Text>
+          <View style={[gs.card, { paddingVertical: 16 }]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ flexDirection: 'row', gap: 6, minWidth: 280 }}>
+              <View style={{ flexDirection: 'row', gap: 5 }}>
                 {gridData.map((mWeeks, mIdx) => (
-                  <View key={`m-${mIdx}`} style={{ alignItems: 'center', gap: 6 }}>
-                    <Text style={{ fontSize: 10, color: colors.textSub, fontWeight: '700', letterSpacing: 0.5 }}>{monthLabels[mIdx]}</Text>
+                  <View key={`m-${mIdx}`} style={{ alignItems: 'center', gap: 5 }}>
+                    <Text style={[s.monthLabel, { color: colors.textMuted }]}>{monthLabels[mIdx]}</Text>
                     {mWeeks.map(wIndex => {
                       const heat = weeklyHeatmap[wIndex] || 0;
+                      const isSelected = wIndex === selectedWeekIndex;
                       return (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           key={`w-${wIndex}`}
                           onPress={() => setSelectedWeekIndex(wIndex)}
-                          style={{ 
-                            width: 18, height: 18, borderRadius: 4, 
+                          style={[s.heatCell, {
                             backgroundColor: heat > 0 ? colors.accent : colors.border,
-                            opacity: wIndex === selectedWeekIndex ? 1 : Math.max(0.15, heat),
-                            borderWidth: wIndex === selectedWeekIndex ? 2 : 0, 
-                            borderColor: colors.text 
-                          }} 
+                            opacity: isSelected ? 1 : Math.max(0.12, heat),
+                            borderWidth: isSelected ? 2 : 0,
+                            borderColor: isSelected ? colors.text : 'transparent',
+                          }]}
                         />
-                      )
+                      );
                     })}
                   </View>
                 ))}
@@ -487,31 +629,108 @@ export default function DashboardScreen() {
             </ScrollView>
           </View>
 
-          {/* ── Dynamic Weekly Summary ── */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          {/* ── Weekly Summary ── */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={gs.sectionTitle}>
-              {selectedWeekIndex === 51 
-                 ? "This Week's Totals" 
-                 : `Week of ${formatDateDDMMYYYY(getDateBefore((51 - selectedWeekIndex) * 7 + 7))} - ${formatDateDDMMYYYY(getDateBefore((51 - selectedWeekIndex) * 7))}`}
+              {selectedWeekIndex === 51 ? "This Week" : `Week of ${formatDateDDMMYYYY(getDateBefore((51 - selectedWeekIndex) * 7 + 7))}`}
             </Text>
             {selectedWeekIndex !== 51 && (
-               <Text style={{ fontSize: 11, color: colors.textSub, fontWeight: '700' }}>{51 - selectedWeekIndex} weeks ago</Text>
+              <Text style={[s.weeksAgo, { color: colors.textMuted }]}>{51 - selectedWeekIndex}w ago</Text>
             )}
           </View>
-          <View style={[gs.card, { marginBottom: 16 }]}>
-            <TodayRow icon="footsteps" label="Total Steps" value={`${weeklySummary.steps.toLocaleString()}`} color={colors.str} />
-            <TodayRow icon="moon" label="Total Sleep" value={`${weeklySummary.sleepHrs.toFixed(1)}h`} color={colors.art} />
-            <TodayRow icon="water" label="Total Water" value={`${(weeklySummary.waterMl/1000).toFixed(1)} L`} color={colors.foc} />
-            <TodayRow icon="restaurant" label="Total Calories" value={`${weeklySummary.calories.toFixed(0)} kcal`} color={colors.str} />
+          <View style={gs.card}>
+            <StatRow icon="trending-up" label="Total Steps" value={weeklySummary.steps.toLocaleString()} color={colors.str} />
+            <StatRow icon="moon" label="Total Sleep" value={`${weeklySummary.sleepHrs.toFixed(1)}h`} color={colors.vit} />
+            <StatRow icon="water" label="Total Water" value={`${(weeklySummary.waterMl / 1000).toFixed(1)} L`} color={colors.foc} />
+            <StatRow icon="nutrition" label="Total Calories" value={`${weeklySummary.calories.toFixed(0)} kcal`} color={colors.orange} />
             {weeklySummary.weightDiff !== 0 && (
-              <TodayRow icon="scale" label="Weight Change" value={`${weeklySummary.weightDiff > 0 ? '+' : ''}${weeklySummary.weightDiff.toFixed(1)} kg`} color={colors.soc} />
+              <StatRow icon="trending-down-outline" label="Weight Change"
+                value={`${weeklySummary.weightDiff > 0 ? '+' : ''}${weeklySummary.weightDiff.toFixed(1)} kg`}
+                color={weeklySummary.weightDiff > 0 ? colors.orange : colors.soc} />
             )}
-            <TodayRow icon="flash" label="Mind/Focus" value={`${weeklySummary.mindMins} min`} color={colors.foc} />
+            <StatRow icon="timer" label="Focus Time" value={`${weeklySummary.mindMins} min`} color={colors.art} />
           </View>
-
-          <View style={{ height: 40 }} />
+          <View style={{ height: 20 }} />
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  // Header
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  headerSub: { fontSize: 10, fontWeight: '700', letterSpacing: 1.5, marginBottom: 2 },
+  headerTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
+  headerBtn: {
+    width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1,
+  },
+  avatarRing: { width: 38, height: 38, borderRadius: 19, borderWidth: 2, overflow: 'hidden' },
+  avatarInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // Greeting
+  greeting: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4, marginBottom: 2 },
+  greetingDate: { fontSize: 14, fontWeight: '300', marginBottom: 20 },
+  // Hero Card
+  heroCard: {
+    borderRadius: 16, padding: 20, borderWidth: 1, marginBottom: 14,
+    overflow: 'hidden', position: 'relative',
+  },
+  heroGlow: {
+    position: 'absolute', right: -20, top: -20, width: 120, height: 120,
+    backgroundColor: 'rgba(99,102,241,0.12)', borderRadius: 60,
+  },
+  heroLevelLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1.5, marginBottom: 4 },
+  heroLevel: { fontSize: 52, fontWeight: '900', lineHeight: 56, letterSpacing: -2 },
+  heroXpSub: { fontSize: 12, fontWeight: '400' },
+  xpBarTrack: { height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 16 },
+  xpBarFill: { height: '100%', borderRadius: 3 },
+  weekDots: { flexDirection: 'row', justifyContent: 'space-between' },
+  weekDotCol: { alignItems: 'center', gap: 4 },
+  weekDot: { width: 28, height: 4, borderRadius: 2 },
+  weekDotLabel: { fontSize: 10, fontWeight: '600' },
+  // Overview cards
+  overviewCard: {
+    minWidth: 120, padding: 14, borderRadius: 14, borderWidth: 1,
+  },
+  overviewIconWrap: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  overviewTag: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  overviewValue: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5, marginTop: 8, marginBottom: 2 },
+  overviewLabel: { fontSize: 11, fontWeight: '500' },
+  // Attribute cards
+  attrGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
+  attrCard: {
+    flex: 1, minWidth: '45%', borderRadius: 12, padding: 12, borderWidth: 1, gap: 8,
+  },
+  attrIconWrap: { width: 24, height: 24, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  attrLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
+  attrValue: { fontSize: 28, fontWeight: '800', letterSpacing: -1 },
+  attrBar: { height: 3, borderRadius: 2, overflow: 'hidden' },
+  attrBarFill: { height: '100%', borderRadius: 2 },
+  // Radar hint
+  radarHint: { fontSize: 12, fontStyle: 'italic', marginTop: 12, textAlign: 'center' },
+  // Chart
+  chartStatName: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
+  chartStatSub: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, marginTop: 2 },
+  closeBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  periodBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
+  periodBtnText: { fontSize: 11, fontWeight: '700' },
+  // Stat rows
+  statRow: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 11,
+    borderBottomWidth: StyleSheet.hairlineWidth, gap: 12,
+  },
+  statIconWrap: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  statLabel: { fontSize: 13, fontWeight: '600' },
+  statSub: { fontSize: 11, fontWeight: '300' },
+  statValue: { fontWeight: '700', fontSize: 14 },
+  // Heatmap
+  monthLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  heatCell: { width: 16, height: 16, borderRadius: 3 },
+  // Weekly
+  weeksAgo: { fontSize: 11, fontWeight: '600', marginBottom: 10 },
+});

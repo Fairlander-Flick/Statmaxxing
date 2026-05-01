@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, Platform, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState, useEffect } from 'react';
@@ -8,22 +8,64 @@ import { saveData, loadData, KEYS } from '../lib/storage';
 import { generateRandomData } from '../lib/mockData';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+type SettingRowProps = {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  iconColor: string;
+  label: string;
+  subLabel?: string;
+  rightContent?: React.ReactNode;
+  onPress?: () => void;
+  isLast?: boolean;
+  danger?: boolean;
+};
+
+function SettingRow({ icon, iconColor, label, subLabel, rightContent, onPress, isLast, danger }: SettingRowProps) {
+  const { colors } = useTheme();
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={onPress ? 0.7 : 1}
+      style={[s.settingRow, {
+        borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border,
+        backgroundColor: danger ? colors.red + '08' : 'transparent',
+      }]}
+    >
+      <View style={[s.settingIcon, { backgroundColor: iconColor + '20' }]}>
+        <Ionicons name={icon} size={18} color={iconColor} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[s.settingLabel, { color: danger ? colors.red : colors.text }]}>{label}</Text>
+        {subLabel ? <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>{subLabel}</Text> : null}
+      </View>
+      {rightContent ?? (onPress ? <Ionicons name="chevron-forward" size={16} color={danger ? colors.red + '80' : colors.textMuted} /> : null)}
+    </TouchableOpacity>
+  );
+}
+
+function SectionCard({ children }: { children: React.ReactNode }) {
+  const { colors } = useTheme();
+  return (
+    <View style={[s.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {children}
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
-  const { colors, mode, isDark, toggleTheme } = useTheme();
+  const { colors, isDark, toggleTheme } = useTheme();
   const layout = useLayout();
   const gs = makeGlobalStyles(colors);
 
   const [waterGoal, setWaterGoal] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [mockPeriod, setMockPeriod] = useState<number>(7);
+  const [mockPeriod, setMockPeriod] = useState<number>(30);
 
   const mockPeriods = [
-    { value: 7, label: '7D' },
-    { value: 14, label: '14D' },
-    { value: 30, label: '1M' },
-    { value: 365, label: '1Y' },
-    { value: 1825, label: '5Y' },
-    { value: 3650, label: '10Y' }
+    { value: 7, label: '7D' }, { value: 14, label: '14D' },
+    { value: 30, label: '1M' }, { value: 365, label: '1Y' },
+    { value: 1825, label: '5Y' }, { value: 3650, label: '10Y' },
   ];
 
   useEffect(() => {
@@ -32,9 +74,7 @@ export default function SettingsScreen() {
 
   const handleSaveWaterGoal = async () => {
     const goal = parseInt(waterGoal);
-    if (!isNaN(goal) && goal > 0) {
-      await saveData(KEYS.waterGoal, goal);
-    }
+    if (!isNaN(goal) && goal > 0) await saveData(KEYS.waterGoal, goal);
   };
 
   const handleGenerateMockData = async () => {
@@ -42,9 +82,9 @@ export default function SettingsScreen() {
     try {
       await generateRandomData(mockPeriod);
       if (Platform.OS === 'web') {
-        window.alert(`Mock data generated for the last ${mockPeriod} days! Please navigate across tabs to refresh.`);
+        window.alert(`Mock data generated for the last ${mockPeriod} days! Navigate across tabs to refresh.`);
       } else {
-        Alert.alert('Success', `Mock data generated for the last ${mockPeriod} days!`);
+        Alert.alert('✅ Done', `Mock data generated for the last ${mockPeriod} days!`);
       }
     } finally {
       setIsGenerating(false);
@@ -57,306 +97,239 @@ export default function SettingsScreen() {
       KEYS.nutritionLogs, KEYS.workoutLogs, KEYS.stepLogs,
       KEYS.mindLogs, KEYS.socialLogs,
     ];
-    for (const key of logKeys) {
-      await AsyncStorage.removeItem(key);
-    }
+    for (const key of logKeys) await AsyncStorage.removeItem(key);
   };
 
   const handleClearAllData = async () => {
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(
-        '⚠️ Tüm log verilerin kalıcı olarak silinecek (uyku, su, kilo, antrenman, focus, sosyal).\nProgramlar, kişiler ve yemek kütüphanesi korunur.\n\nEmin misin?'
+        '⚠️ All log data will be permanently deleted (sleep, water, weight, workouts, focus, social).\nPrograms, contacts and food library are preserved.\n\nAre you sure?'
       );
-      if (confirmed) {
-        await doDeleteAllLogs();
-        window.alert('✅ Tüm log verileri silindi.');
-      }
+      if (confirmed) { await doDeleteAllLogs(); window.alert('✅ All log data deleted.'); }
     } else {
       Alert.alert(
-        '⚠️ Tüm Veriyi Sil',
-        'Tüm log verilerin kalıcı olarak silinecek. Programlar, kişiler ve yemek kütüphanesi korunur.\n\nBu işlem geri alınamaz!',
+        '⚠️ Clear All Data',
+        'All log data will be permanently deleted. Programs and food library are preserved.\n\nThis cannot be undone!',
         [
-          { text: 'İptal', style: 'cancel' },
-          {
-            text: 'Evet, Sil',
-            style: 'destructive',
-            onPress: async () => {
-              await doDeleteAllLogs();
-              Alert.alert('Temizlendi', 'Tüm log verileri silindi.');
-            },
-          },
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: async () => { await doDeleteAllLogs(); Alert.alert('Done', 'All log data has been deleted.'); } },
         ]
       );
     }
   };
 
-  const s = StyleSheet.create({
-    inner: {
-      flex: 1,
-      backgroundColor: colors.bg,
-    },
-    scroll: {
-      flex: 1,
-    },
-    content: {
-      alignSelf: 'center' as const,
-      width: '100%',
-      maxWidth: layout.maxWidth,
-      paddingHorizontal: layout.hPadding,
-      paddingTop: 24,
-      paddingBottom: 40,
-    },
-    themeRow: {
-      flexDirection: 'row' as const,
-      gap: 12,
-      marginBottom: 14,
-    },
-    themeCard: {
-      flex: 1,
-      borderRadius: 18,
-      borderWidth: 2,
-      padding: 18,
-      alignItems: 'center' as const,
-      gap: 10,
-    },
-    themePreview: {
-      width: '100%',
-      height: 64,
-      borderRadius: 12,
-      overflow: 'hidden' as const,
-      flexDirection: 'row' as const,
-    },
-    previewBlock: {
-      flex: 1,
-    },
-    themeLabel: {
-      fontWeight: '800',
-      fontSize: 14,
-      letterSpacing: 0.2,
-    },
-    themeDesc: {
-      fontSize: 11,
-      textAlign: 'center' as const,
-      lineHeight: 16,
-    },
-    activeBadge: {
-      paddingHorizontal: 10,
-      paddingVertical: 3,
-      borderRadius: 20,
-    },
-    activeBadgeText: {
-      fontSize: 11,
-      fontWeight: '700',
-    },
-    sectionCard: {
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: colors.border,
-      overflow: 'hidden' as const,
-      marginBottom: 14,
-    },
-    settingRow: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      padding: 16,
-      gap: 14,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.borderLight,
-    },
-    settingRowLast: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      padding: 16,
-      gap: 14,
-    },
-    settingIcon: {
-      width: 36,
-      height: 36,
-      borderRadius: 10,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-    },
-    settingLabel: {
-      flex: 1,
-      color: colors.text,
-      fontWeight: '600',
-      fontSize: 15,
-    },
-    settingValue: {
-      color: colors.textSub,
-      fontSize: 13,
-    },
-    versionText: {
-      textAlign: 'center' as const,
-      color: colors.textMuted,
-      fontSize: 12,
-      marginTop: 24,
-    },
-  });
-
   return (
-    <SafeAreaView style={s.inner}>
-      <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
-        <View style={s.content}>
-          <Text style={gs.screenTitle}>Settings</Text>
-          <Text style={gs.screenSub}>Customize your experience</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* ── Header ── */}
+      <View style={[s.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+        <View>
+          <Text style={[s.headerSub, { color: colors.textMuted }]}>TECHNICAL ATHLETE</Text>
+          <Text style={[s.headerTitle, { color: colors.text }]}>Settings</Text>
+        </View>
+        <View style={[s.versionBadge, { backgroundColor: colors.accentDim, borderColor: colors.border }]}>
+          <Text style={[s.versionBadgeText, { color: colors.accent }]}>v1.0</Text>
+        </View>
+      </View>
 
-          {/* ── Theme Picker ── */}
-          <Text style={gs.sectionTitle}>Appearance</Text>
-          <View style={s.themeRow}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        <View style={{ paddingHorizontal: layout.hPadding, maxWidth: layout.maxWidth, alignSelf: 'center', width: '100%', paddingTop: 20 }}>
 
-            {/* AMOLED Dark Card */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => !isDark && toggleTheme()}
-              style={[
-                s.themeCard,
-                {
-                  backgroundColor: '#0f0f0f',
-                  borderColor: isDark ? '#0ea5e9' : '#2a2a2a',
-                },
-              ]}
-            >
-              {/* Mini preview */}
-              <View style={s.themePreview}>
-                <View style={[s.previewBlock, { backgroundColor: '#000' }]} />
-                <View style={[s.previewBlock, { backgroundColor: '#0f0f0f' }]} />
-                <View style={[s.previewBlock, { backgroundColor: '#0ea5e966' }]} />
-              </View>
-              <Text style={[s.themeLabel, { color: '#f8f8f8' }]}>AMOLED Dark</Text>
-              <Text style={[s.themeDesc, { color: '#888' }]}>
-                Pure black · Neon accents{'\n'}Easy on OLED screens
-              </Text>
-              {isDark && (
-                <View style={[s.activeBadge, { backgroundColor: '#0ea5e9' }]}>
-                  <Text style={[s.activeBadgeText, { color: '#fff' }]}>✓ Active</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {/* Nordic Light Card */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => isDark && toggleTheme()}
-              style={[
-                s.themeCard,
-                {
-                  backgroundColor: '#ffffff',
-                  borderColor: !isDark ? '#0284c7' : '#e2ddd8',
-                },
-              ]}
-            >
-              {/* Mini preview */}
-              <View style={s.themePreview}>
-                <View style={[s.previewBlock, { backgroundColor: '#f7f5f2' }]} />
-                <View style={[s.previewBlock, { backgroundColor: '#ffffff' }]} />
-                <View style={[s.previewBlock, { backgroundColor: '#0284c733' }]} />
-              </View>
-              <Text style={[s.themeLabel, { color: '#1c1917' }]}>Nordic Light</Text>
-              <Text style={[s.themeDesc, { color: '#78716c' }]}>
-                Warm white · Clean type{'\n'}Inspired by Notion
-              </Text>
-              {!isDark && (
-                <View style={[s.activeBadge, { backgroundColor: '#0284c7' }]}>
-                  <Text style={[s.activeBadgeText, { color: '#fff' }]}>✓ Active</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+          {/* ── Profile Card ── */}
+          <View style={[s.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[s.profileAvatar, { backgroundColor: colors.accent + '20', borderColor: colors.accent + '40' }]}>
+              <Ionicons name="person" size={32} color={colors.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.profileName, { color: colors.text }]}>Athlete</Text>
+              <Text style={[s.profileSub, { color: colors.textMuted }]}>StatsEngine · Technical Athlete</Text>
+            </View>
+            <View style={[s.profileBadge, { backgroundColor: colors.accentDim }]}>
+              <Text style={[s.profileBadgeText, { color: colors.accent }]}>ELITE</Text>
+            </View>
           </View>
 
-          {/* ── Configuration & Mock Data ── */}
-          <Text style={gs.sectionTitle}>Configuration</Text>
-          <View style={s.sectionCard}>
-            <View style={s.settingRow}>
-              <View style={[s.settingIcon, { backgroundColor: colors.foc + '33' }]}>
-                <Ionicons name="water" size={20} color={colors.foc} />
+          {/* ── Appearance ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Appearance</Text>
+          <SectionCard>
+            <SettingRow
+              icon={isDark ? 'moon' : 'sunny'}
+              iconColor={colors.accent}
+              label="Theme"
+              subLabel={isDark ? 'Dark Mode' : 'Light Mode'}
+              rightContent={
+                <Switch
+                  value={isDark}
+                  onValueChange={toggleTheme}
+                  trackColor={{ false: colors.border, true: colors.accent + '60' }}
+                  thumbColor={isDark ? colors.accent : colors.textMuted}
+                />
+              }
+              isLast
+            />
+          </SectionCard>
+
+          {/* ── Preferences ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Preferences</Text>
+          <SectionCard>
+            <View style={[s.settingRow, { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+              <View style={[s.settingIcon, { backgroundColor: colors.foc + '20' }]}>
+                <Ionicons name="water" size={18} color={colors.foc} />
               </View>
-              <Text style={s.settingLabel}>Daily Water Goal (ml)</Text>
-              <TextInput 
-                style={{ flex: 1, backgroundColor: colors.bg, padding: 8, borderRadius: 8, color: colors.text }}
+              <View style={{ flex: 1 }}>
+                <Text style={[s.settingLabel, { color: colors.text }]}>Daily Water Goal</Text>
+                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>ml per day</Text>
+              </View>
+              <TextInput
+                style={[s.inlineInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
                 value={waterGoal}
                 onChangeText={setWaterGoal}
                 onBlur={handleSaveWaterGoal}
                 keyboardType="numeric"
+                selectTextOnFocus
               />
             </View>
+            <SettingRow
+              icon="scale-outline"
+              iconColor={colors.textMuted}
+              label="Units"
+              subLabel="Metric (kg, ml, km)"
+              isLast
+            />
+          </SectionCard>
 
-            <View style={[{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.borderLight }]}>
-              <Text style={[s.settingLabel, { marginBottom: 10 }]}>Mock Data Timeframe</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {mockPeriods.map((p) => (
-                  <TouchableOpacity
-                    key={p.value}
-                    onPress={() => setMockPeriod(p.value)}
-                    style={{
-                      paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1,
-                      borderColor: mockPeriod === p.value ? colors.soc : colors.border,
-                      backgroundColor: mockPeriod === p.value ? colors.soc + '33' : colors.surfaceAlt
-                    }}
-                  >
-                    <Text style={{ color: mockPeriod === p.value ? colors.soc : colors.textSub, fontSize: 13, fontWeight: '700' }}>
-                      {p.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+          {/* ── Mock Data Generator ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Developer Tools</Text>
+          <SectionCard>
+            <View style={[s.settingRow, { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+              <View style={[s.settingIcon, { backgroundColor: colors.soc + '20' }]}>
+                <Ionicons name="flask-outline" size={18} color={colors.soc} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.settingLabel, { color: colors.text }]}>Mock Data Period</Text>
+                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>Data to generate</Text>
               </View>
             </View>
-
-            <TouchableOpacity 
-              style={[s.settingRowLast, { backgroundColor: colors.red + '22' }]} 
+            <View style={s.periodRow}>
+              {mockPeriods.map((p) => (
+                <TouchableOpacity
+                  key={p.value}
+                  onPress={() => setMockPeriod(p.value)}
+                  style={[s.periodChip, {
+                    backgroundColor: mockPeriod === p.value ? colors.soc + '20' : colors.surfaceAlt,
+                    borderColor: mockPeriod === p.value ? colors.soc : colors.border,
+                  }]}
+                >
+                  <Text style={[s.periodChipText, { color: mockPeriod === p.value ? colors.soc : colors.textSub }]}>
+                    {p.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={[s.settingRow, {
+                borderBottomWidth: 0,
+                backgroundColor: colors.soc + '10',
+                opacity: isGenerating ? 0.6 : 1,
+              }]}
               onPress={handleGenerateMockData}
               disabled={isGenerating}
             >
-              <View style={[s.settingIcon, { backgroundColor: colors.red + '44' }]}>
-                <Ionicons name="refresh" size={20} color={colors.red} />
+              <View style={[s.settingIcon, { backgroundColor: colors.soc + '20' }]}>
+                <Ionicons name={isGenerating ? 'hourglass' : 'refresh'} size={18} color={colors.soc} />
               </View>
-              <Text style={[s.settingLabel, { color: colors.red }]}>
-                {isGenerating ? "Generating..." : `Generate ${mockPeriod} Days Mock Data`}
+              <Text style={[s.settingLabel, { color: colors.soc }]}>
+                {isGenerating ? 'Generating...' : `Generate ${mockPeriod}-Day Mock Data`}
               </Text>
+              {!isGenerating && <Ionicons name="play-circle" size={20} color={colors.soc} />}
             </TouchableOpacity>
-          </View>
+          </SectionCard>
 
-          {/* ── Danger Zone ── */}
-          <Text style={[gs.sectionTitle, { color: colors.red }]}>Danger Zone</Text>
-          <View style={s.sectionCard}>
-            <TouchableOpacity
-              style={[s.settingRowLast, { backgroundColor: colors.red + '15' }]}
+          {/* ── Data Management ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Data Management</Text>
+          <SectionCard>
+            <SettingRow
+              icon="share-outline"
+              iconColor={colors.accent}
+              label="Export Data"
+              subLabel="Download all your stats"
+              isLast={false}
+            />
+            <SettingRow
+              icon="trash"
+              iconColor={colors.red}
+              label="Clear All Log Data"
+              subLabel="Sleep, water, workouts, focus — Programs preserved"
               onPress={handleClearAllData}
-            >
-              <View style={[s.settingIcon, { backgroundColor: colors.red + '33' }]}>
-                <Ionicons name="trash" size={20} color={colors.red} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.settingLabel, { color: colors.red }]}>Tüm Log Verilerini Sil</Text>
-                <Text style={{ color: colors.textSub, fontSize: 12, marginTop: 2 }}>Programlar ve kütüphane korunur</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.red + '88'} />
-            </TouchableOpacity>
-          </View>
+              danger
+              isLast
+            />
+          </SectionCard>
 
-          {/* ── App Info ── */}
-          <Text style={gs.sectionTitle}>About</Text>
-          <View style={s.sectionCard}>
-            <View style={s.settingRow}>
-              <View style={[s.settingIcon, { backgroundColor: colors.accentDim }]}>
-                <Ionicons name="information-circle-outline" size={20} color={colors.accent} />
-              </View>
-              <Text style={s.settingLabel}>Version</Text>
-              <Text style={s.settingValue}>1.0.0</Text>
-            </View>
-            <View style={s.settingRowLast}>
-              <View style={[s.settingIcon, { backgroundColor: colors.greenDim }]}>
-                <Ionicons name="trophy-outline" size={20} color={colors.green} />
-              </View>
-              <Text style={s.settingLabel}>Statmaxxing</Text>
-              <Text style={s.settingValue}>Gamified life tracker</Text>
-            </View>
-          </View>
+          {/* ── About ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>About</Text>
+          <SectionCard>
+            <SettingRow
+              icon="information-circle-outline"
+              iconColor={colors.accent}
+              label="Version"
+              subLabel="StatsEngine v1.0.0"
+              isLast={false}
+            />
+            <SettingRow
+              icon="trophy-outline"
+              iconColor={colors.yellow}
+              label="StatsEngine"
+              subLabel="Gamified life tracker · RPG for real life"
+              isLast
+            />
+          </SectionCard>
 
-          <Text style={s.versionText}>Made with 💪 · Statmaxxing v1.0</Text>
+          {/* Footer */}
+          <Text style={[s.footer, { color: colors.textMuted }]}>
+            Made with 💪{'\n'}StatsEngine · Technical Athlete Suite
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1,
+  },
+  headerSub: { fontSize: 10, fontWeight: '700', letterSpacing: 1.5, marginBottom: 2 },
+  headerTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
+  versionBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
+  versionBadgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  profileCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 20,
+  },
+  profileAvatar: {
+    width: 56, height: 56, borderRadius: 28,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 2,
+  },
+  profileName: { fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+  profileSub: { fontSize: 12, fontWeight: '400', marginTop: 2 },
+  profileBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+  profileBadgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  sectionCard: {
+    borderRadius: 14, borderWidth: 1, overflow: 'hidden', marginBottom: 14,
+  },
+  settingRow: {
+    flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12,
+  },
+  settingIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  settingLabel: { fontSize: 14, fontWeight: '600' },
+  settingSubLabel: { fontSize: 12, fontWeight: '300', marginTop: 1 },
+  inlineInput: {
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1,
+    fontSize: 14, fontWeight: '600', minWidth: 80, textAlign: 'center',
+  },
+  periodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 14, paddingBottom: 14 },
+  periodChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
+  periodChipText: { fontSize: 12, fontWeight: '700' },
+  footer: { textAlign: 'center', fontSize: 12, marginTop: 24, lineHeight: 20 },
+});

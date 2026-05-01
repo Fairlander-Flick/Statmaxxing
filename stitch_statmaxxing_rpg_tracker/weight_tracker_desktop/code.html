@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;family=Inter:wght@600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#c7c4d7",
+                        "surface-container-high": "#292932",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "primary-container": "#8083ff",
+                        "inverse-surface": "#e4e1ed",
+                        "surface-container": "#1f1f27",
+                        "tertiary-container": "#d97721",
+                        "surface": "#13131b",
+                        "on-secondary-fixed": "#1b1b1f",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "tertiary-fixed": "#ffdcc5",
+                        "outline-variant": "#464554",
+                        "on-primary-container": "#0d0096",
+                        "on-secondary-fixed-variant": "#47464b",
+                        "on-tertiary-fixed": "#301400",
+                        "on-surface": "#e4e1ed",
+                        "secondary-container": "#47464b",
+                        "on-error-container": "#ffdad6",
+                        "on-error": "#690005",
+                        "tertiary": "#ffb783",
+                        "surface-variant": "#34343d",
+                        "on-tertiary": "#4f2500",
+                        "on-primary": "#1000a9",
+                        "secondary": "#c8c5cb",
+                        "on-secondary": "#303034",
+                        "inverse-primary": "#494bd6",
+                        "surface-tint": "#c0c1ff",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "surface-container-low": "#1b1b23",
+                        "surface-dim": "#13131b",
+                        "secondary-fixed-dim": "#c8c5cb",
+                        "surface-bright": "#393841",
+                        "on-tertiary-container": "#452000",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "secondary-fixed": "#e4e1e7",
+                        "background": "#13131b",
+                        "surface-container-lowest": "#0d0d15",
+                        "error-container": "#93000a",
+                        "primary-fixed": "#e1e0ff",
+                        "on-secondary-container": "#b6b4ba",
+                        "error": "#ffb4ab",
+                        "on-background": "#e4e1ed",
+                        "inverse-on-surface": "#303038",
+                        "surface-container-highest": "#34343d",
+                        "outline": "#908fa0",
+                        "primary": "#c0c1ff",
+                        "on-primary-fixed": "#07006c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "xs": "4px",
+                        "container-max": "1200px",
+                        "gutter": "24px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "sm": "8px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "h2": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "h1": ["Plus Jakarta Sans"],
+                        "display-xl": ["Plus Jakarta Sans"],
+                        "label-caps": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "300"}],
+                        "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "300"}],
+                        "h1": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(22, 22, 30, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .stats-card-border {
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .progress-gradient {
+            background: linear-gradient(90deg, #6366F1 0%, #818CF8 100%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-x-hidden">
+<!-- Desktop Side Navigation -->
+<nav class="hidden md:flex flex-col fixed left-0 top-0 bottom-0 py-6 px-4 w-[240px] h-screen border-r border-white/5 bg-[#0F0F13] z-50 font-['Plus_Jakarta_Sans'] antialiased">
+<div class="mb-10 px-4">
+<span class="text-lg font-bold text-white tracking-tight">StatsEngine</span>
+<p class="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Technical Athlete</p>
+</div>
+<div class="space-y-1 flex-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white transition-colors hover:bg-white/5 group" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-medium">Home</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-white bg-white/5 font-semibold border-r-2 border-[#6366F1] group" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_weight">monitor_weight</span>
+<span class="font-medium">Weight</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white transition-colors hover:bg-white/5 group" href="#">
+<span class="material-symbols-outlined" data-icon="bedtime">bedtime</span>
+<span class="font-medium">Sleep</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white transition-colors hover:bg-white/5 group" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+<span class="font-medium">Nutrition</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white transition-colors hover:bg-white/5 group" href="#">
+<span class="material-symbols-outlined" data-icon="center_focus_strong">center_focus_strong</span>
+<span class="font-medium">Focus</span>
+</a>
+</div>
+<div class="pt-6 border-t border-white/5">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white transition-colors hover:bg-white/5" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="font-medium">Profile</span>
+</a>
+</div>
+</nav>
+<!-- Top AppBar -->
+<header class="flex items-center justify-between px-6 sticky top-0 z-40 md:ml-[240px] w-full h-16 border-b border-white/10 bg-[#0F0F13]/80 backdrop-blur-md font-['Plus_Jakarta_Sans'] text-sm">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-xs">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm" data-icon="search">search</span>
+<input class="w-full bg-white/5 border-none rounded-full pl-10 pr-4 py-1.5 text-xs focus:ring-1 focus:ring-[#6366F1] transition-all" placeholder="Search metrics..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors scale-95 active:scale-100">
+<span class="material-symbols-outlined text-gray-400" data-icon="notifications">notifications</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors scale-95 active:scale-100">
+<span class="material-symbols-outlined text-gray-400" data-icon="contrast">contrast</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-white/10 ml-2">
+<img class="w-full h-full object-cover" data-alt="close-up portrait of a determined male athlete with short hair and intense gaze in high contrast studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOsNA5jRRrKFF7T6rx2GBOB8rPD7ITSEM3q6ih0laiRSXGfKy4T-AduBMBg4u9VQpzVjlvgFZqP2METFvEME793HfKvuE_l_CyD-9roNY9SxyFKheO70dTB-M_ZDaPApcMhb-hPUqE2HmeDDIjsfLo5gbhXqfrP8uyYNSw6JtWK6Ez93kpoeUjziWoAXL_CeM1AFjvNJOW0xujB0Dg2GOJIdVS1Kkg9C2e2vHyNu_o722m6_ytxmkIZpMn72S0u97LuMQMYdWOeISV"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="md:ml-[240px] min-h-screen p-6 lg:p-10 space-y-8">
+<!-- Header & Action Row -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="font-h1 text-h1 text-white">Weight Tracker</h1>
+<p class="font-body-md text-on-surface-variant mt-1">Data-driven progression tracking for the Technical Athlete.</p>
+</div>
+<button class="bg-[#6366F1] text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 hover:bg-[#818CF8] transition-all shadow-lg shadow-indigo-500/20 active:scale-95">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                Log Weight
+            </button>
+</div>
+<!-- Overview Cards (Bento Grid Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Current Weight -->
+<div class="glass-panel stats-card-border p-6 rounded-2xl group hover:border-white/20 transition-all">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-caps text-label-caps text-gray-400">Current Weight</span>
+<span class="material-symbols-outlined text-[#6366F1]" data-icon="scale">scale</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-display-xl text-display-xl text-white">78.5</span>
+<span class="text-body-lg text-gray-500">kg</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-emerald-400 text-sm">
+<span class="material-symbols-outlined text-sm" data-icon="trending_down">trending_down</span>
+<span>-0.4kg since last week</span>
+</div>
+</div>
+<!-- Goal Weight -->
+<div class="glass-panel stats-card-border p-6 rounded-2xl group hover:border-white/20 transition-all">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-caps text-label-caps text-gray-400">Goal Weight</span>
+<span class="material-symbols-outlined text-tertiary" data-icon="flag">flag</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-display-xl text-display-xl text-white">75.0</span>
+<span class="text-body-lg text-gray-500">kg</span>
+</div>
+<div class="mt-4">
+<div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+<div class="progress-gradient h-full w-[88%] rounded-full"></div>
+</div>
+<div class="flex justify-between mt-2 text-xs text-gray-500">
+<span>Starting: 84kg</span>
+<span>88% Complete</span>
+</div>
+</div>
+</div>
+<!-- Difference -->
+<div class="glass-panel stats-card-border p-6 rounded-2xl group hover:border-white/20 transition-all">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-caps text-label-caps text-gray-400">Difference</span>
+<span class="material-symbols-outlined text-primary" data-icon="calculate">calculate</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-display-xl text-display-xl text-white">-2.4</span>
+<span class="text-body-lg text-gray-500">kg</span>
+</div>
+<div class="mt-4 text-sm text-gray-400">
+                    Target: Lose <span class="text-white">3.5kg</span> remaining
+                </div>
+</div>
+</div>
+<!-- Main Analytics & Body Stats -->
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+<!-- Large Line Chart Container -->
+<div class="lg:col-span-3 glass-panel stats-card-border rounded-2xl overflow-hidden flex flex-col">
+<div class="p-6 border-b border-white/5 flex items-center justify-between">
+<h3 class="font-h2 text-h2 text-white">Weight Progression</h3>
+<div class="flex bg-white/5 rounded-lg p-1">
+<button class="px-3 py-1 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition-all">1W</button>
+<button class="px-3 py-1 rounded-md text-xs font-semibold bg-white/10 text-[#6366F1] transition-all">1M</button>
+<button class="px-3 py-1 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition-all">3M</button>
+<button class="px-3 py-1 rounded-md text-xs font-semibold text-gray-400 hover:text-white transition-all">1Y</button>
+</div>
+</div>
+<div class="flex-1 p-6 flex flex-col justify-end relative h-[360px]">
+<!-- Chart Placeholder Grid -->
+<div class="absolute inset-x-6 top-6 bottom-16 grid grid-cols-7 gap-4 opacity-20">
+<div class="border-r border-white/30"></div>
+<div class="border-r border-white/30"></div>
+<div class="border-r border-white/30"></div>
+<div class="border-r border-white/30"></div>
+<div class="border-r border-white/30"></div>
+<div class="border-r border-white/30"></div>
+<div></div>
+</div>
+<!-- Chart Line Simulation -->
+<svg class="w-full h-full relative z-10 overflow-visible" viewbox="0 0 1000 300">
+<path d="M 0 250 Q 150 240, 250 180 T 400 150 T 600 100 T 800 120 T 1000 40" fill="none" stroke="#6366F1" stroke-linecap="round" stroke-width="4"></path>
+<path d="M 0 250 Q 150 240, 250 180 T 400 150 T 600 100 T 800 120 T 1000 40 V 300 H 0 Z" fill="url(#indigo-gradient)" opacity="0.1"></path>
+<defs>
+<lineargradient id="indigo-gradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#6366F1"></stop>
+<stop offset="100%" stop-color="#6366F1" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<!-- Active Point -->
+<circle cx="600" cy="100" fill="#6366F1" r="6" stroke="#0F0F13" stroke-width="2"></circle>
+</svg>
+<!-- X Axis -->
+<div class="flex justify-between mt-4 px-2 font-label-caps text-[10px] text-gray-500 uppercase">
+<span>Oct 01</span>
+<span>Oct 05</span>
+<span>Oct 10</span>
+<span>Oct 15</span>
+<span>Oct 20</span>
+<span>Oct 25</span>
+<span>Today</span>
+</div>
+</div>
+</div>
+<!-- Body Stats Side Card -->
+<div class="lg:col-span-1 space-y-6">
+<div class="glass-panel stats-card-border p-6 rounded-2xl flex flex-col gap-6">
+<h3 class="font-label-caps text-label-caps text-gray-400">Body Stats</h3>
+<div class="space-y-4">
+<div class="flex justify-between items-center p-3 rounded-xl bg-white/5">
+<div>
+<p class="text-[10px] text-gray-500 uppercase font-semibold">BMI</p>
+<p class="text-lg font-bold text-white">24.1</p>
+</div>
+<span class="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">NORMAL</span>
+</div>
+<div class="flex justify-between items-center p-3 rounded-xl bg-white/5">
+<div>
+<p class="text-[10px] text-gray-500 uppercase font-semibold">Body Fat</p>
+<p class="text-lg font-bold text-white">18%</p>
+</div>
+<span class="material-symbols-outlined text-gray-500" data-icon="opacity">opacity</span>
+</div>
+<div class="flex justify-between items-center p-3 rounded-xl bg-white/5">
+<div>
+<p class="text-[10px] text-gray-500 uppercase font-semibold">Muscle Mass</p>
+<p class="text-lg font-bold text-white">35.2<span class="text-xs font-normal text-gray-400 ml-1">kg</span></p>
+</div>
+<span class="material-symbols-outlined text-gray-500" data-icon="fitness_center">fitness_center</span>
+</div>
+</div>
+<div class="pt-4 border-t border-white/5">
+<div class="flex items-center gap-2 text-xs text-gray-400 mb-2">
+<span class="material-symbols-outlined text-sm" data-icon="info">info</span>
+<span>Based on smart scale sync</span>
+</div>
+<button class="w-full py-2 rounded-lg bg-white/5 text-xs font-semibold text-white hover:bg-white/10 transition-colors">View Deep Insights</button>
+</div>
+</div>
+<div class="glass-panel rounded-2xl p-6 bg-gradient-to-br from-[#6366F1]/10 to-transparent border border-[#6366F1]/20">
+<span class="material-symbols-outlined text-[#6366F1] mb-2" data-icon="rocket_launch">rocket_launch</span>
+<h4 class="font-semibold text-white mb-1">New Buff Earned!</h4>
+<p class="text-xs text-gray-400">Consistency Strike: 14 days of weighing in. Level up your discipline stat.</p>
+</div>
+</div>
+</div>
+<!-- Log History List -->
+<div class="glass-panel stats-card-border rounded-2xl overflow-hidden">
+<div class="p-6 border-b border-white/5 flex items-center justify-between">
+<h3 class="font-h2 text-h2 text-white">Log History</h3>
+<button class="text-xs font-semibold text-[#6366F1] flex items-center gap-1 hover:underline">
+                    Export CSV <span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="font-label-caps text-[10px] text-gray-500 uppercase tracking-widest border-b border-white/5">
+<th class="px-6 py-4 font-semibold">Date</th>
+<th class="px-6 py-4 font-semibold">Weight</th>
+<th class="px-6 py-4 font-semibold">Body Fat</th>
+<th class="px-6 py-4 font-semibold">Notes</th>
+<th class="px-6 py-4 font-semibold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-white font-medium">Oct 24, 2023</span>
+<span class="text-[10px] text-gray-500">07:30 AM</span>
+</div>
+</td>
+<td class="px-6 py-4 text-white font-semibold">78.5 kg</td>
+<td class="px-6 py-4 text-gray-400">18.0%</td>
+<td class="px-6 py-4 text-sm text-gray-500 italic">Post-workout morning weight</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-400 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-white font-medium">Oct 23, 2023</span>
+<span class="text-[10px] text-gray-500">07:15 AM</span>
+</div>
+</td>
+<td class="px-6 py-4 text-white font-semibold">78.9 kg</td>
+<td class="px-6 py-4 text-gray-400">18.1%</td>
+<td class="px-6 py-4 text-sm text-gray-500 italic">-</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-400 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-white font-medium">Oct 22, 2023</span>
+<span class="text-[10px] text-gray-500">08:00 AM</span>
+</div>
+</td>
+<td class="px-6 py-4 text-white font-semibold">79.2 kg</td>
+<td class="px-6 py-4 text-gray-400">18.2%</td>
+<td class="px-6 py-4 text-sm text-gray-500 italic">Rest day bloat</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+<button class="p-1.5 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-400 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="delete">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-white/5 text-center">
+<button class="text-xs font-semibold text-gray-500 hover:text-white transition-colors">Load More Entries</button>
+</div>
+</div>
+</main>
+<!-- Side Panel Overlay UI (Simulated as hidden or partially off-screen for design) -->
+<!-- This is the 'Log Weight' UI requested -->
+<div class="fixed right-0 top-0 bottom-0 w-[400px] bg-[#16161E] border-l border-white/10 shadow-2xl z-[60] transform translate-x-full transition-transform duration-300 pointer-events-none">
+<div class="p-8 flex flex-col h-full">
+<div class="flex items-center justify-between mb-8">
+<h2 class="font-h2 text-h2 text-white">Log Entry</h2>
+<button class="text-gray-500 hover:text-white"><span class="material-symbols-outlined" data-icon="close">close</span></button>
+</div>
+<form class="space-y-6">
+<div>
+<label class="block font-label-caps text-label-caps text-gray-400 mb-2">Weight (kg)</label>
+<input class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#6366F1] focus:ring-0 transition-all" placeholder="00.0" step="0.1" type="number"/>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps text-gray-400 mb-2">Body Fat (%)</label>
+<input class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#6366F1] focus:ring-0 transition-all" placeholder="00.0" step="0.1" type="number"/>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps text-gray-400 mb-2">Date &amp; Time</label>
+<input class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#6366F1] focus:ring-0 transition-all" type="datetime-local"/>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps text-gray-400 mb-2">Notes</label>
+<textarea class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#6366F1] focus:ring-0 transition-all" placeholder="How are you feeling?" rows="3"></textarea>
+</div>
+<div class="pt-6">
+<button class="w-full bg-[#6366F1] text-white py-4 rounded-xl font-bold hover:bg-[#818CF8] transition-all shadow-lg shadow-indigo-500/20" type="submit">Save Entry</button>
+<button class="w-full mt-3 text-gray-500 hover:text-white transition-colors text-sm py-2" type="button">Cancel</button>
+</div>
+</form>
+</div>
+</div>
+<!-- Bottom Navigation (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center pt-3 pb-safe-bottom bg-[#16161E]/90 backdrop-blur-xl rounded-t-2xl border-t border-white/10 font-['Plus_Jakarta_Sans'] text-[10px] font-medium shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
+<a class="flex flex-col items-center text-gray-500 active:bg-white/5 px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span>Home</span>
+</a>
+<a class="flex flex-col items-center text-[#6366F1] active:bg-white/5 px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_weight">monitor_weight</span>
+<span>Weight</span>
+</a>
+<a class="flex flex-col items-center text-gray-500 active:bg-white/5 px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="bedtime">bedtime</span>
+<span>Sleep</span>
+</a>
+<a class="flex flex-col items-center text-gray-500 active:bg-white/5 px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+<span>Nutrition</span>
+</a>
+<a class="flex flex-col items-center text-gray-500 active:bg-white/5 px-4 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="center_focus_strong">center_focus_strong</span>
+<span>Focus</span>
+</a>
+</nav>
+</body></html>

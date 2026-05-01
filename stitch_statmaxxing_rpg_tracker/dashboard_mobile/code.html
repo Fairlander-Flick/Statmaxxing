@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;family=Inter:wght@600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#c7c4d7",
+                        "surface-container-high": "#292932",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "primary-container": "#8083ff",
+                        "inverse-surface": "#e4e1ed",
+                        "surface-container": "#1f1f27",
+                        "tertiary-container": "#d97721",
+                        "surface": "#13131b",
+                        "on-secondary-fixed": "#1b1b1f",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "tertiary-fixed": "#ffdcc5",
+                        "outline-variant": "#464554",
+                        "on-primary-container": "#0d0096",
+                        "on-secondary-fixed-variant": "#47464b",
+                        "on-tertiary-fixed": "#301400",
+                        "on-surface": "#e4e1ed",
+                        "secondary-container": "#47464b",
+                        "on-error-container": "#ffdad6",
+                        "on-error": "#690005",
+                        "tertiary": "#ffb783",
+                        "surface-variant": "#34343d",
+                        "on-tertiary": "#4f2500",
+                        "on-primary": "#1000a9",
+                        "secondary": "#c8c5cb",
+                        "on-secondary": "#303034",
+                        "inverse-primary": "#494bd6",
+                        "surface-tint": "#c0c1ff",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "surface-container-low": "#1b1b23",
+                        "surface-dim": "#13131b",
+                        "secondary-fixed-dim": "#c8c5cb",
+                        "surface-bright": "#393841",
+                        "on-tertiary-container": "#452000",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "secondary-fixed": "#e4e1e7",
+                        "background": "#13131b",
+                        "surface-container-lowest": "#0d0d15",
+                        "error-container": "#93000a",
+                        "primary-fixed": "#e1e0ff",
+                        "on-secondary-container": "#b6b4ba",
+                        "error": "#ffb4ab",
+                        "on-background": "#e4e1ed",
+                        "inverse-on-surface": "#303038",
+                        "surface-container-highest": "#34343d",
+                        "outline": "#908fa0",
+                        "primary": "#c0c1ff",
+                        "on-primary-fixed": "#07006c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "xs": "4px",
+                        "container-max": "1200px",
+                        "gutter": "24px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "sm": "8px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "h2": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "h1": ["Plus Jakarta Sans"],
+                        "display-xl": ["Plus Jakarta Sans"],
+                        "label-caps": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "300"}],
+                        "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "300"}],
+                        "h1": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hexagon-mask {
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .safe-pb {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md antialiased overflow-x-hidden pb-24">
+<!-- Top App Bar -->
+<header class="flex items-center justify-between px-6 sticky top-0 z-40 h-16 bg-[#0F0F13]/80 backdrop-blur-md border-b border-white/10">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="portrait of a determined male athlete with short hair in a dark gym environment, moody dramatic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVecDMq8OkgSkwP6E7cDv6e198aJbfT6hmZhYFNIIx6XingP8ds3eXsp2MQcnx1bEC14vKIVPLphN0wctSgwZVgBmDARZGnZBNVqgC2Jn5y8SKig32b4wIafTdijuzRooSMNw3molgUdeRd6_nH0BqXBueb6kKqgFwrPCcDaKBVB3_ZQQObkHqKVlwRMSSfA3utGdRxkHVZpfBCHa_nr_hk8Jj8OECgnMzrUZS5IpPApB4qL6OY-F3MnwOrF4CHFppcl3iZLWMZFCi"/>
+</div>
+<div>
+<p class="text-label-caps font-label-caps text-on-surface-variant uppercase tracking-widest">Technician</p>
+<h1 class="text-h2 font-h2 text-white">StatsEngine</h1>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="text-on-surface-variant transition-transform active:scale-95">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant transition-transform active:scale-95">
+<span class="material-symbols-outlined" data-icon="contrast">contrast</span>
+</button>
+</div>
+</header>
+<main class="px-6 py-6 space-y-8">
+<!-- Hero: Weekly Progress -->
+<section class="relative overflow-hidden rounded-xl bg-surface-container border border-white/5 p-6">
+<div class="relative z-10 flex flex-col gap-4">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="text-h1 font-h1 text-white">Level 42</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">2,450 XP until next Rank</p>
+</div>
+<div class="text-right">
+<span class="text-label-caps font-label-caps bg-primary/20 text-primary px-3 py-1 rounded-full">Elite Class</span>
+</div>
+</div>
+<!-- XP Bar -->
+<div class="w-full h-3 bg-white/5 rounded-full overflow-hidden">
+<div class="h-full w-[65%] bg-gradient-to-r from-primary to-[#818CF8]"></div>
+</div>
+<div class="grid grid-cols-7 gap-2 mt-2">
+<div class="flex flex-col items-center gap-1">
+<div class="w-full h-1 bg-primary rounded-full"></div>
+<span class="text-[10px] text-on-surface-variant">M</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-full h-1 bg-primary rounded-full"></div>
+<span class="text-[10px] text-on-surface-variant">T</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-full h-1 bg-primary rounded-full"></div>
+<span class="text-[10px] text-on-surface-variant">W</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-full h-1 bg-primary/20 rounded-full"></div>
+<span class="text-[10px] text-primary font-bold">T</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-full h-1 bg-white/5 rounded-full"></div>
+<span class="text-[10px] text-on-surface-variant">F</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-full h-1 bg-white/5 rounded-full"></div>
+<span class="text-[10px] text-on-surface-variant">S</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<div class="w-full h-1 bg-white/5 rounded-full"></div>
+<span class="text-[10px] text-on-surface-variant">S</span>
+</div>
+</div>
+</div>
+<div class="absolute -right-4 -top-4 w-32 h-32 bg-primary/10 blur-3xl"></div>
+</section>
+<!-- RPG Centerpiece: Attributes -->
+<section class="flex flex-col items-center justify-center py-4 relative">
+<div class="relative w-64 h-64 flex items-center justify-center">
+<!-- Hexagon Radar Placeholder -->
+<svg class="w-full h-full absolute transform -rotate-30" viewbox="0 0 100 100">
+<polygon fill="none" points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"></polygon>
+<polygon fill="none" points="50,15 85,32.5 85,67.5 50,85 15,67.5 15,32.5" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"></polygon>
+<polygon fill="none" points="50,25 75,37.5 75,62.5 50,75 25,62.5 25,37.5" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"></polygon>
+<!-- Data Polygon -->
+<polygon fill="rgba(99, 102, 241, 0.2)" points="50,15 80,40 70,65 50,85 30,55 25,35" stroke="#6366F1" stroke-width="1.5"></polygon>
+</svg>
+<!-- Label Overlay -->
+<div class="absolute top-0 flex flex-col items-center">
+<span class="material-symbols-outlined text-primary mb-1" data-icon="monitor_weight">monitor_weight</span>
+<span class="text-label-caps font-label-caps text-[10px]">STR</span>
+</div>
+<div class="absolute bottom-0 flex flex-col items-center">
+<span class="material-symbols-outlined text-primary mb-1" data-icon="restaurant">restaurant</span>
+<span class="text-label-caps font-label-caps text-[10px]">VIT</span>
+</div>
+<div class="absolute top-1/4 -right-2 flex flex-col items-center">
+<span class="material-symbols-outlined text-primary mb-1" data-icon="bedtime">bedtime</span>
+<span class="text-label-caps font-label-caps text-[10px]">REC</span>
+</div>
+<div class="absolute top-1/4 -left-2 flex flex-col items-center">
+<span class="material-symbols-outlined text-primary mb-1" data-icon="center_focus_strong">center_focus_strong</span>
+<span class="text-label-caps font-label-caps text-[10px]">FOC</span>
+</div>
+<!-- Center Avatar/Level -->
+<div class="hexagon-mask w-20 h-20 bg-surface-container-high border border-white/20 flex items-center justify-center z-10 relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/30 to-transparent"></div>
+<span class="text-h1 font-h1 text-white relative z-20">42</span>
+</div>
+</div>
+</section>
+<!-- Horizontal Scroll Cards: Today's Overview -->
+<section class="space-y-4">
+<div class="flex justify-between items-center">
+<h3 class="text-h2 font-h2 text-white">Daily Buffs</h3>
+<span class="text-primary text-sm font-medium">View all</span>
+</div>
+<div class="flex overflow-x-auto gap-4 -mx-6 px-6 hide-scrollbar">
+<!-- Card 1 -->
+<div class="min-w-[240px] p-5 rounded-xl bg-surface-container border border-white/5 flex flex-col gap-3 group transition-all duration-300 hover:border-primary/40">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+</div>
+<span class="text-label-caps font-label-caps text-on-surface-variant text-[10px]">ACTIVE</span>
+</div>
+<div>
+<h4 class="text-body-lg font-h2 text-white">Energy Surge</h4>
+<p class="text-body-md font-body-md text-on-surface-variant text-sm">Metabolism is boosted +15%</p>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="min-w-[240px] p-5 rounded-xl bg-surface-container border border-white/5 flex flex-col gap-3 group transition-all duration-300 hover:border-primary/40">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-lg bg-on-tertiary-fixed-variant/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" data-icon="self_improvement">self_improvement</span>
+</div>
+<span class="text-label-caps font-label-caps text-on-surface-variant text-[10px]">LOCKED</span>
+</div>
+<div>
+<h4 class="text-body-lg font-h2 text-white">Zen State</h4>
+<p class="text-body-md font-body-md text-on-surface-variant text-sm">Meditation streak: 2 days</p>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="min-w-[240px] p-5 rounded-xl bg-surface-container border border-white/5 flex flex-col gap-3 group transition-all duration-300 hover:border-primary/40">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="local_fire_department">local_fire_department</span>
+</div>
+<span class="text-label-caps font-label-caps text-on-surface-variant text-[10px]">STREAK</span>
+</div>
+<div>
+<h4 class="text-body-lg font-h2 text-white">Caloric Burn</h4>
+<p class="text-body-md font-body-md text-on-surface-variant text-sm">1,240 kcal burned today</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Bento Grid: Stats Mini -->
+<section class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low border border-white/5 p-4 rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="steps">steps</span>
+<div>
+<p class="text-[10px] font-label-caps text-on-surface-variant uppercase">Steps</p>
+<p class="text-body-lg font-h2 text-white">8,432</p>
+</div>
+</div>
+<div class="bg-surface-container-low border border-white/5 p-4 rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="favorite">favorite</span>
+<div>
+<p class="text-[10px] font-label-caps text-on-surface-variant uppercase">HR</p>
+<p class="text-body-lg font-h2 text-white">62 bpm</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/30 flex items-center justify-center z-50 transition-transform active:scale-90">
+<span class="material-symbols-outlined text-2xl" data-icon="add">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center pt-3 pb-safe-bottom bg-[#16161E]/90 backdrop-blur-xl border-t border-white/5 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
+<div class="flex flex-col items-center text-[#6366F1] py-2">
+<span class="material-symbols-outlined" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center text-gray-500 py-2">
+<span class="material-symbols-outlined" data-icon="monitor_weight">monitor_weight</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium mt-1">Weight</span>
+</div>
+<div class="flex flex-col items-center text-gray-500 py-2">
+<span class="material-symbols-outlined" data-icon="bedtime">bedtime</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium mt-1">Sleep</span>
+</div>
+<div class="flex flex-col items-center text-gray-500 py-2">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium mt-1">Nutrition</span>
+</div>
+<div class="flex flex-col items-center text-gray-500 py-2">
+<span class="material-symbols-outlined" data-icon="center_focus_strong">center_focus_strong</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium mt-1">Focus</span>
+</div>
+</nav>
+</body></html>

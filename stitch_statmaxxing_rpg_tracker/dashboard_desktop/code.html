@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StatsEngine Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;family=Inter:wght@600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#c7c4d7",
+                        "surface-container-high": "#292932",
+                        "on-tertiary-fixed-variant": "#703700",
+                        "primary-container": "#8083ff",
+                        "inverse-surface": "#e4e1ed",
+                        "surface-container": "#1f1f27",
+                        "tertiary-container": "#d97721",
+                        "surface": "#13131b",
+                        "on-secondary-fixed": "#1b1b1f",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "tertiary-fixed": "#ffdcc5",
+                        "outline-variant": "#464554",
+                        "on-primary-container": "#0d0096",
+                        "on-secondary-fixed-variant": "#47464b",
+                        "on-tertiary-fixed": "#301400",
+                        "on-surface": "#e4e1ed",
+                        "secondary-container": "#47464b",
+                        "on-error-container": "#ffdad6",
+                        "on-error": "#690005",
+                        "tertiary": "#ffb783",
+                        "surface-variant": "#34343d",
+                        "on-tertiary": "#4f2500",
+                        "on-primary": "#1000a9",
+                        "secondary": "#c8c5cb",
+                        "on-secondary": "#303034",
+                        "inverse-primary": "#494bd6",
+                        "surface-tint": "#c0c1ff",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "surface-container-low": "#1b1b23",
+                        "surface-dim": "#13131b",
+                        "secondary-fixed-dim": "#c8c5cb",
+                        "surface-bright": "#393841",
+                        "on-tertiary-container": "#452000",
+                        "tertiary-fixed-dim": "#ffb783",
+                        "secondary-fixed": "#e4e1e7",
+                        "background": "#13131b",
+                        "surface-container-lowest": "#0d0d15",
+                        "error-container": "#93000a",
+                        "primary-fixed": "#e1e0ff",
+                        "on-secondary-container": "#b6b4ba",
+                        "error": "#ffb4ab",
+                        "on-background": "#e4e1ed",
+                        "inverse-on-surface": "#303038",
+                        "surface-container-highest": "#34343d",
+                        "outline": "#908fa0",
+                        "primary": "#c0c1ff",
+                        "on-primary-fixed": "#07006c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "xs": "4px",
+                        "container-max": "1200px",
+                        "gutter": "24px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "sm": "8px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "h2": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "h1": ["Plus Jakarta Sans"],
+                        "display-xl": ["Plus Jakarta Sans"],
+                        "label-caps": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "300"}],
+                        "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "300"}],
+                        "h1": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(22, 22, 30, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+        .hexagon-mask {
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary/30 antialiased">
+<aside class="hidden md:flex flex-col fixed left-0 top-0 bottom-0 py-6 px-4 w-[240px] h-screen border-r border-white/5 bg-[#0F0F13] z-50">
+<div class="mb-10 px-4">
+<h1 class="text-lg font-bold text-white tracking-tight">StatsEngine</h1>
+<p class="text-[10px] text-gray-500 font-label-caps uppercase tracking-widest mt-1">Technical Athlete</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-white/5 font-semibold border-r-2 border-[#6366F1] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-sm">Home</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_weight">monitor_weight</span>
+<span class="text-sm">Weight</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="bedtime">bedtime</span>
+<span class="text-sm">Sleep</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+<span class="text-sm">Nutrition</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="center_focus_strong">center_focus_strong</span>
+<span class="text-sm">Focus</span>
+</a>
+</nav>
+<div class="pt-6 border-t border-white/5 mt-auto">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="text-sm">Profile</span>
+</a>
+</div>
+</aside>
+<header class="flex items-center justify-between px-6 sticky top-0 z-40 md:ml-[240px] h-16 border-b border-white/10 bg-[#0F0F13]/80 backdrop-blur-md">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg">search</span>
+<input class="w-full bg-white/5 border border-white/10 rounded-full py-1.5 pl-10 pr-4 text-xs focus:ring-1 focus:ring-[#6366F1] focus:border-[#6366F1] outline-none transition-all" placeholder="Search data..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-gray-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="contrast">contrast</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-white/20">
+<img class="w-full h-full object-cover" data-alt="close-up of a confident person with a clean professional look and high-tech athletic aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAaCujPKcjs45B1x-iI_etJR66dso0RmM0HlSfc9dn6etnkvRRkOVbQTico1G6q-BAQ-U2nwBdT6_qQ0LS3dG9PYGJhIV1a1qSLSpolTYL0I-FG0JMRnP7lsBIOvg3D5-wD87ZWneYt2pXXGtqOZK8Uw1TVZJGEf6ffC3yyUBRHSSBEToUmI7kdkt1B2uK5wZR-zoW6nUtQqGB9HJZoF6hYDQfzhs8dI72gxP3K-zU0c0nYc2QxSclNGPY_0atiJxyzO2d15vQ6QQq-"/>
+</div>
+</div>
+</header>
+<main class="md:ml-[240px] p-6 lg:p-8 min-h-screen pb-24 md:pb-8">
+<div class="max-w-[1400px] mx-auto space-y-8">
+<section class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="font-h1 text-h1 text-white">Good morning, Alex</h2>
+<p class="text-on-surface-variant font-body-md mt-1">Thursday, October 24, 2024</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-[#6366F1] text-white rounded-xl text-sm font-semibold hover:bg-[#818CF8] transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">add</span>
+                        Log Activity
+                    </button>
+</div>
+</section>
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+<div class="glass-card p-5 rounded-2xl">
+<div class="flex items-center justify-between mb-3">
+<span class="material-symbols-outlined text-[#6366F1]" data-icon="steps">directions_walk</span>
+<span class="text-[10px] font-label-caps text-green-400">+12%</span>
+</div>
+<div class="text-2xl font-bold text-white">8,420</div>
+<div class="text-xs text-gray-400 mt-1">Steps Today</div>
+</div>
+<div class="glass-card p-5 rounded-2xl">
+<div class="flex items-center justify-between mb-3">
+<span class="material-symbols-outlined text-[#6366F1]" data-icon="bedtime">bedtime</span>
+<span class="text-[10px] font-label-caps text-gray-500">Optimum</span>
+</div>
+<div class="text-2xl font-bold text-white">7.5h</div>
+<div class="text-xs text-gray-400 mt-1">Sleep Score</div>
+</div>
+<div class="glass-card p-5 rounded-2xl">
+<div class="flex items-center justify-between mb-3">
+<span class="material-symbols-outlined text-[#6366F1]" data-icon="water_drop">water_drop</span>
+<span class="text-[10px] font-label-caps text-orange-400">Low</span>
+</div>
+<div class="text-2xl font-bold text-white">1.2L</div>
+<div class="text-xs text-gray-400 mt-1">Hydration</div>
+</div>
+<div class="glass-card p-5 rounded-2xl">
+<div class="flex items-center justify-between mb-3">
+<span class="material-symbols-outlined text-[#6366F1]" data-icon="local_fire_department">local_fire_department</span>
+<span class="text-[10px] font-label-caps text-green-400">On Track</span>
+</div>
+<div class="text-2xl font-bold text-white">1,850</div>
+<div class="text-xs text-gray-400 mt-1">Calories</div>
+</div>
+<div class="glass-card p-5 rounded-2xl">
+<div class="flex items-center justify-between mb-3">
+<span class="material-symbols-outlined text-[#6366F1]" data-icon="center_focus_strong">center_focus_strong</span>
+<span class="text-[10px] font-label-caps text-indigo-400">High</span>
+</div>
+<div class="text-2xl font-bold text-white">4h</div>
+<div class="text-xs text-gray-400 mt-1">Deep Focus</div>
+</div>
+</section>
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<div class="lg:col-span-8 flex flex-col gap-6">
+<div class="glass-card p-6 rounded-2xl flex-1 min-h-[350px] relative overflow-hidden">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="text-lg font-bold text-white">Weekly Activity</h3>
+<p class="text-xs text-gray-400">Burned 12,450 kcal this week</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 rounded-full bg-[#6366F1]/10 text-[#6366F1] text-[10px] font-bold">CALORIES</span>
+<span class="px-3 py-1 rounded-full bg-white/5 text-gray-400 text-[10px] font-bold">WORKOUTS</span>
+</div>
+</div>
+<div class="absolute bottom-0 left-0 right-0 h-48">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 1000 100">
+<defs>
+<lineargradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#6366F1" stop-opacity="0.5"></stop>
+<stop offset="100%" stop-color="#6366F1" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,80 C100,75 200,90 300,50 C400,10 500,40 600,60 C700,80 800,20 900,30 L1000,10 L1000,100 L0,100 Z" fill="url(#chartGradient)"></path>
+<path d="M0,80 C100,75 200,90 300,50 C400,10 500,40 600,60 C700,80 800,20 900,30 L1000,10" fill="none" stroke="#6366F1" stroke-width="2"></path>
+</svg>
+</div>
+<div class="flex justify-between mt-auto pt-48 px-2 text-[10px] text-gray-500 font-medium">
+<span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="glass-card p-6 rounded-2xl flex items-center gap-6">
+<div class="relative w-20 h-20">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-white/5" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-width="6"></circle>
+<circle class="text-[#6366F1]" cx="40" cy="40" fill="transparent" r="34" stroke="currentColor" stroke-dasharray="213.6" stroke-dashoffset="32" stroke-width="6"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-lg font-bold text-white">85%</div>
+</div>
+<div>
+<h4 class="text-sm font-bold text-white uppercase tracking-tight">Daily Completion</h4>
+<p class="text-xs text-gray-400 mt-1">2/3 goals achieved for today</p>
+<div class="mt-2 flex gap-1">
+<div class="w-2 h-2 rounded-full bg-[#6366F1]"></div>
+<div class="w-2 h-2 rounded-full bg-[#6366F1]"></div>
+<div class="w-2 h-2 rounded-full bg-white/10"></div>
+</div>
+</div>
+</div>
+<div class="glass-card p-6 rounded-2xl flex items-center gap-6 bg-gradient-to-br from-[#6366F1]/10 to-transparent">
+<div class="w-16 h-16 hexagon-mask bg-[#6366F1] flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-3xl" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-white uppercase tracking-tight">Current Streak</h4>
+<div class="flex items-baseline gap-1">
+<span class="text-3xl font-black text-white">14</span>
+<span class="text-xs text-gray-400 font-bold uppercase">Days</span>
+</div>
+<p class="text-[10px] text-[#6366F1] font-bold mt-1">PERSONAL RECORD</p>
+</div>
+</div>
+</div>
+</div>
+<div class="lg:col-span-4 space-y-6">
+<div class="glass-card p-8 rounded-2xl flex flex-col items-center">
+<h3 class="text-sm font-bold text-white uppercase tracking-widest mb-8">Performance Radar</h3>
+<div class="relative w-64 h-64">
+<svg class="w-full h-full opacity-20" viewbox="0 0 100 100">
+<polygon class="text-white" fill="none" points="50,0 100,25 100,75 50,100 0,75 0,25" stroke="currentColor" stroke-width="0.5"></polygon>
+<polygon class="text-white" fill="none" points="50,10 90,30 90,70 50,90 10,70 10,30" stroke="currentColor" stroke-width="0.5"></polygon>
+<polygon class="text-white" fill="none" points="50,20 80,35 80,65 50,80 20,65 20,35" stroke="currentColor" stroke-width="0.5"></polygon>
+<polygon class="text-white" fill="none" points="50,30 70,40 70,60 50,70 30,60 30,40" stroke="currentColor" stroke-width="0.5"></polygon>
+</svg>
+<svg class="absolute inset-0 w-full h-full drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]" viewbox="0 0 100 100">
+<polygon fill="rgba(99, 102, 241, 0.3)" points="50,15 85,35 92,68 50,85 25,65 15,35" stroke="#6366F1" stroke-width="1.5"></polygon>
+<circle cx="50" cy="15" fill="#6366F1" r="1.5"></circle>
+<circle cx="85" cy="35" fill="#6366F1" r="1.5"></circle>
+<circle cx="92" cy="68" fill="#6366F1" r="1.5"></circle>
+<circle cx="50" cy="85" fill="#6366F1" r="1.5"></circle>
+<circle cx="25" cy="65" fill="#6366F1" r="1.5"></circle>
+<circle cx="15" cy="35" fill="#6366F1" r="1.5"></circle>
+</svg>
+<div class="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] font-bold text-gray-400">STRENGTH</div>
+<div class="absolute top-1/4 -right-10 text-[10px] font-bold text-gray-400">ENDURANCE</div>
+<div class="absolute bottom-1/4 -right-8 text-[10px] font-bold text-gray-400">MIND</div>
+<div class="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-bold text-gray-400">SLEEP</div>
+<div class="absolute bottom-1/4 -left-12 text-[10px] font-bold text-gray-400">NUTRITION</div>
+<div class="absolute top-1/4 -left-14 text-[10px] font-bold text-gray-400">CONSISTENCY</div>
+</div>
+<div class="mt-12 grid grid-cols-2 gap-x-8 gap-y-4 w-full">
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-[#6366F1]"></div>
+<span class="text-[10px] text-gray-400 font-bold">LEVEL 42</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-1.5 h-1.5 rounded-full bg-[#6366F1]"></div>
+<span class="text-[10px] text-gray-400 font-bold">ELITE CLASS</span>
+</div>
+</div>
+</div>
+<div class="glass-card p-6 rounded-2xl">
+<h3 class="text-sm font-bold text-white mb-4">Upcoming Goals</h3>
+<div class="space-y-4">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-gray-400 text-lg">timer</span>
+</div>
+<div class="flex-1">
+<div class="text-xs font-bold text-white">5km Tempo Run</div>
+<div class="text-[10px] text-gray-500">Scheduled for 5:00 PM</div>
+</div>
+<span class="material-symbols-outlined text-gray-600 text-lg">chevron_right</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-gray-400 text-lg">restaurant</span>
+</div>
+<div class="flex-1">
+<div class="text-xs font-bold text-white">Meal Prep (Phase 2)</div>
+<div class="text-[10px] text-gray-500">Focus on protein intake</div>
+</div>
+<span class="material-symbols-outlined text-gray-600 text-lg">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center pt-3 pb-6 bg-[#16161E]/90 backdrop-blur-xl border-t border-white/10 rounded-t-2xl">
+<a class="flex flex-col items-center text-[#6366F1]" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[10px] font-medium font-['Plus_Jakarta_Sans'] mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center text-gray-500" href="#">
+<span class="material-symbols-outlined" data-icon="monitor_weight">monitor_weight</span>
+<span class="text-[10px] font-medium font-['Plus_Jakarta_Sans'] mt-1">Weight</span>
+</a>
+<a class="flex flex-col items-center text-gray-500" href="#">
+<span class="material-symbols-outlined" data-icon="bedtime">bedtime</span>
+<span class="text-[10px] font-medium font-['Plus_Jakarta_Sans'] mt-1">Sleep</span>
+</a>
+<a class="flex flex-col items-center text-gray-500" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+<span class="text-[10px] font-medium font-['Plus_Jakarta_Sans'] mt-1">Nutrition</span>
+</a>
+<a class="flex flex-col items-center text-gray-500" href="#">
+<span class="material-symbols-outlined" data-icon="center_focus_strong">center_focus_strong</span>
+<span class="text-[10px] font-medium font-['Plus_Jakarta_Sans'] mt-1">Focus</span>
+</a>
+</nav>
+</body></html>

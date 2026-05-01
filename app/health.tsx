@@ -24,10 +24,10 @@ export default function HealthScreen() {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
 
   const TAB_CONFIG: { id: HealthTab; label: string; icon: React.ComponentProps<typeof Ionicons>['name']; color: string }[] = [
-    { id: 'sleep', label: 'Sleep', icon: 'moon', color: colors.art },
-    { id: 'water', label: 'Water', icon: 'water', color: colors.foc },
-    { id: 'weight', label: 'Weight', icon: 'scale', color: colors.soc },
-    { id: 'nutrition', label: 'Food', icon: 'restaurant', color: colors.str },
+    { id: 'sleep', label: 'Sleep', icon: 'moon-outline', color: colors.art },
+    { id: 'water', label: 'Water', icon: 'water-outline', color: colors.foc },
+    { id: 'weight', label: 'Weight', icon: 'barbell-outline', color: colors.soc },
+    { id: 'nutrition', label: 'Food', icon: 'fast-food-outline', color: colors.str },
   ];
 
   const [activeTab, setActiveTab] = useState<HealthTab>('sleep');
@@ -193,23 +193,35 @@ export default function HealthScreen() {
   // Centered form block wrapper
   const fw = { alignSelf: 'center' as const, width: '100%' as const, maxWidth: layout.inputMaxWidth };
 
+  const activeTabConfig = TAB_CONFIG.find(t => t.id === activeTab)!;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* ── Tab Row ── */}
-      <View style={[s.tabRow, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View style={{ flexDirection: 'row', gap: 8, maxWidth: layout.maxWidth, width: '100%', alignSelf: 'center', paddingHorizontal: layout.hPadding }}>
+      {/* ── Header ── */}
+      <View style={[s.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+        <View>
+          <Text style={[s.headerSub, { color: colors.textMuted }]}>HEALTH TRACKER</Text>
+          <Text style={[s.headerTitle, { color: activeTabConfig.color }]}>{activeTabConfig.label}</Text>
+        </View>
+        <View style={[s.headerBadge, { backgroundColor: activeTabConfig.color + '20', borderColor: activeTabConfig.color + '40' }]}>
+          <Ionicons name={activeTabConfig.icon} size={20} color={activeTabConfig.color} />
+        </View>
+      </View>
+      {/* ── Tab Pill Row ── */}
+      <View style={[s.tabRow, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: layout.hPadding, gap: 8, flexDirection: 'row', paddingVertical: 10 }}>
           {TAB_CONFIG.map((t) => {
             const isActive = activeTab === t.id;
             return (
               <TouchableOpacity key={t.id}
-                style={[s.tabBtn, { borderColor: isActive ? t.color : colors.border, backgroundColor: isActive ? t.color + '20' : colors.surfaceAlt }]}
+                style={[s.tabBtn, { borderColor: isActive ? t.color + '60' : colors.border, backgroundColor: isActive ? t.color + '18' : colors.surface }]}
                 onPress={() => setActiveTab(t.id)}>
-                <Ionicons name={t.icon} size={22} color={isActive ? t.color : colors.textSub} />
-                <Text style={[s.tabBtnText, { color: isActive ? t.color : colors.textSub }]}>{t.label}</Text>
+                <Ionicons name={t.icon} size={16} color={isActive ? t.color : colors.textMuted} />
+                <Text style={[s.tabBtnText, { color: isActive ? t.color : colors.textMuted }]}>{t.label}</Text>
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
       <ScrollView style={gs.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ alignItems: 'center' }}>
@@ -218,37 +230,41 @@ export default function HealthScreen() {
           {/* ── SLEEP ── */}
           {activeTab === 'sleep' && (
             <View>
-              <Text style={[gs.screenTitle, { color: colors.art }]}>Sleep</Text>
-              <Text style={gs.screenSub}>Log your nightly rest</Text>
               {todaySleep !== null && (
-                <View style={[gs.card, { alignItems: 'center', borderColor: colors.art + '44' }]}>
-                  <Ionicons name="moon" size={36} color={colors.art} />
-                  <Text style={{ color: colors.art, fontSize: 56, fontWeight: '900', marginTop: 8, letterSpacing: -2 }}>
+                <View style={[gs.card, { alignItems: 'center', borderColor: colors.art + '40', marginBottom: 14 }]}>
+                  <View style={[s.statIconLarge, { backgroundColor: colors.art + '20' }]}>
+                    <Ionicons name="moon" size={28} color={colors.art} />
+                  </View>
+                  <Text style={[s.bigStat, { color: colors.art }]}>
                     {Number.isInteger(todaySleep) ? todaySleep : Number(todaySleep).toFixed(1)}h
                   </Text>
-                  <Text style={{ color: colors.textSub, fontSize: 15, marginTop: 4 }}>Tonight's sleep logged ✓</Text>
+                  <Text style={[s.bigStatSub, { color: colors.textSub }]}>Tonight's sleep logged ✓</Text>
                 </View>
               )}
               <View style={gs.card}>
-                <View style={fw}>
-                  <Text style={gs.label}>Hours slept</Text>
-                  <TextInput style={gs.input} placeholder="e.g. 7.5" placeholderTextColor={colors.textSub} keyboardType="decimal-pad" value={sleepHours} onChangeText={setSleepHours} />
-                  <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.art }]} onPress={saveSleep}>
+                <Text style={[gs.label, { marginBottom: 8 }]}>Hours slept</Text>
+                <TextInput style={gs.input} placeholder="e.g. 7.5" placeholderTextColor={colors.textMuted} keyboardType="decimal-pad" value={sleepHours} onChangeText={setSleepHours} />
+                <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.art }]} onPress={saveSleep}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="moon" size={16} color="#fff" />
                     <Text style={gs.btnPrimaryText}>Save Sleep</Text>
-                  </TouchableOpacity>
-                </View>
+                  </View>
+                </TouchableOpacity>
               </View>
               {sleepHistory.length > 0 && (
                 <>
                   <Text style={gs.sectionTitle}>Recent Logs</Text>
                   {sleepHistory.map((w) => (
-                    <View key={w.id} style={[gs.card, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 }]}>
-                      <Text style={{ color: colors.textSub, fontSize: 14 }}>{w.date}</Text>
-                      <Text style={{ color: colors.art, fontWeight: '800', fontSize: 18, flex: 1, textAlign: 'right', marginRight: 12 }}>
+                    <View key={w.id} style={[gs.card, { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 }]}>
+                      <View style={[s.logIconWrap, { backgroundColor: colors.art + '20' }]}>
+                        <Ionicons name="moon" size={16} color={colors.art} />
+                      </View>
+                      <Text style={[s.logDate, { color: colors.textSub }]}>{w.date}</Text>
+                      <Text style={[s.logValue, { color: colors.art, flex: 1, textAlign: 'right', marginRight: 12 }]}>
                         {Number.isInteger(w.hours) ? w.hours : Number(w.hours).toFixed(1)}h
                       </Text>
                       <TouchableOpacity onPress={() => deleteSleepLog(w.id)} style={{ padding: 4 }}>
-                        <Ionicons name="trash-outline" size={18} color={colors.red} />
+                        <Ionicons name="trash-outline" size={17} color={colors.red} />
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -260,49 +276,58 @@ export default function HealthScreen() {
           {/* ── WATER ── */}
           {activeTab === 'water' && (
             <View>
-              <Text style={[gs.screenTitle, { color: colors.foc }]}>Water</Text>
-              <Text style={gs.screenSub}>Daily goal: {waterGoal} ml</Text>
-
-              <View style={[gs.card, { alignItems: 'center' }]}>
-                <View style={[s.bottleOuter, { backgroundColor: colors.surfaceAlt, borderColor: colors.foc + '66' }]}>
-                  <Animated.View style={[s.bottleFill, { height: fillHeight, backgroundColor: colors.foc }]} />
+              {/* Big water display */}
+              <View style={[gs.card, { alignItems: 'center', borderColor: waterPct >= 100 ? colors.soc + '60' : colors.border }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <View style={[s.bottleOuter, { backgroundColor: colors.surfaceAlt, borderColor: colors.foc + '60' }]}>
+                    <Animated.View style={[s.bottleFill, { height: fillHeight, backgroundColor: colors.foc }]} />
+                  </View>
+                  <View style={{ alignItems: 'flex-start' }}>
+                    <Text style={[s.bigStat, { color: colors.foc, fontSize: 44 }]}>{waterToday} ml</Text>
+                    <Text style={[s.bigStatSub, { color: colors.textSub }]}>{waterPct.toFixed(0)}% of {waterGoal} ml</Text>
+                    {waterPct >= 100 && (
+                      <View style={[gs.pill, { backgroundColor: colors.soc + '20', marginTop: 8 }]}>
+                        <Text style={[gs.pillText, { color: colors.soc }]}>🎯 GOAL REACHED</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-                <Text style={[s.waterAmount, { color: colors.foc }]}>{waterToday} ml</Text>
-                <Text style={{ color: colors.textSub, fontSize: 15 }}>{waterPct.toFixed(0)}% of {waterGoal} ml goal</Text>
-                {waterPct >= 100 && <Text style={{ color: colors.soc, fontWeight: '700', marginTop: 8, fontSize: 16 }}>🎯 Goal reached!</Text>}
+                {/* Progress bar */}
+                <View style={[s.waterProgressTrack, { backgroundColor: colors.border }]}>
+                  <Animated.View style={[s.waterProgressFill, { width: fillAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) as any, backgroundColor: colors.foc }]} />
+                </View>
                 {waterToday > 0 && (
                   <TouchableOpacity
                     onPress={resetTodayWater}
-                    style={{ marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.red + '18', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 }}
+                    style={[s.resetBtn, { backgroundColor: colors.red + '15', borderColor: colors.red + '30' }]}
                   >
-                    <Ionicons name="trash-outline" size={16} color={colors.red} />
-                    <Text style={{ color: colors.red, fontWeight: '700', fontSize: 13 }}>Bugünü Sıfırla</Text>
+                    <Ionicons name="trash-outline" size={14} color={colors.red} />
+                    <Text style={[s.resetBtnText, { color: colors.red }]}>Reset Today</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
               <Text style={gs.sectionTitle}>Quick Add</Text>
-              <View style={[{ flexDirection: 'row', gap: 8, marginBottom: 10 }, fw]}>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
                 {[150, 250, 330, 500].map((ml) => (
-                  <TouchableOpacity key={ml} style={[s.quickBtn, { backgroundColor: colors.accentDim, borderColor: colors.foc + '55' }]} onPress={() => addWater(ml)}>
-                    <Ionicons name="water" size={16} color={colors.foc} />
+                  <TouchableOpacity key={ml} style={[s.quickBtn, { backgroundColor: colors.foc + '15', borderColor: colors.foc + '40' }]} onPress={() => addWater(ml)}>
+                    <Ionicons name="water" size={14} color={colors.foc} />
                     <Text style={[s.quickBtnText, { color: colors.foc }]}>+{ml}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              {/* Custom ml */}
-              <View style={[{ flexDirection: 'row', gap: 10, marginBottom: 14 }, fw]}>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
                 <TextInput
                   style={[gs.input, { flex: 1, marginBottom: 0 }]}
-                  placeholder="Custom ml…"
-                  placeholderTextColor={colors.textSub}
+                  placeholder="Custom amount (ml)…"
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="numeric"
                   value={customMl}
                   onChangeText={setCustomMl}
                 />
                 <TouchableOpacity
-                  style={[gs.btnPrimary, { backgroundColor: colors.foc, paddingHorizontal: 20, paddingVertical: 0, justifyContent: 'center' }]}
+                  style={[gs.btnPrimary, { backgroundColor: colors.foc, paddingHorizontal: 20, justifyContent: 'center' }]}
                   onPress={() => { const ml = parseInt(customMl); if (!isNaN(ml) && ml > 0) { addWater(ml); setCustomMl(''); } }}>
                   <Text style={gs.btnPrimaryText}>Add</Text>
                 </TouchableOpacity>
@@ -313,16 +338,26 @@ export default function HealthScreen() {
           {/* ── WEIGHT ── */}
           {activeTab === 'weight' && (
             <View>
-              <Text style={[gs.screenTitle, { color: colors.soc }]}>Weight</Text>
-              <Text style={gs.screenSub}>Log your morning weight</Text>
-              <View style={gs.card}>
-                <View style={fw}>
-                  <Text style={gs.label}>Weight (kg)</Text>
-                  <TextInput style={gs.input} placeholder="e.g. 75.4" placeholderTextColor={colors.textSub} keyboardType="decimal-pad" value={weightKg} onChangeText={setWeightKg} />
-                  <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.soc }]} onPress={saveWeight}>
-                    <Text style={gs.btnPrimaryText}>Log Weight</Text>
-                  </TouchableOpacity>
+              {weightHistory.length > 0 && (
+                <View style={[gs.card, { alignItems: 'center', borderColor: colors.soc + '40', marginBottom: 14 }]}>
+                  <View style={[s.statIconLarge, { backgroundColor: colors.soc + '20' }]}>
+                    <Ionicons name="scale" size={28} color={colors.soc} />
+                  </View>
+                  <Text style={[s.bigStat, { color: colors.soc }]}>
+                    {weightHistory[weightHistory.length - 1].kg} kg
+                  </Text>
+                  <Text style={[s.bigStatSub, { color: colors.textSub }]}>Latest reading</Text>
                 </View>
+              )}
+              <View style={gs.card}>
+                <Text style={[gs.label, { marginBottom: 8 }]}>Morning weight (kg)</Text>
+                <TextInput style={gs.input} placeholder="e.g. 75.4" placeholderTextColor={colors.textMuted} keyboardType="decimal-pad" value={weightKg} onChangeText={setWeightKg} />
+                <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.soc }]} onPress={saveWeight}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="scale" size={16} color="#fff" />
+                    <Text style={gs.btnPrimaryText}>Log Weight</Text>
+                  </View>
+                </TouchableOpacity>
               </View>
               {weightHistory.length >= 2 && (
                 <>
@@ -355,11 +390,14 @@ export default function HealthScreen() {
                 <>
                   <Text style={gs.sectionTitle}>Recent</Text>
                   {weightHistory.slice(-10).reverse().map((w) => (
-                    <View key={w.id} style={[gs.card, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
-                      <Text style={{ color: colors.textSub, fontSize: 15 }}>{w.date}</Text>
-                      <Text style={{ color: colors.soc, fontWeight: '800', fontSize: 20, flex: 1, textAlign: 'right', marginRight: 12 }}>{w.kg} kg</Text>
+                    <View key={w.id} style={[gs.card, { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 }]}>
+                      <View style={[s.logIconWrap, { backgroundColor: colors.soc + '20' }]}>
+                        <Ionicons name="scale" size={16} color={colors.soc} />
+                      </View>
+                      <Text style={[s.logDate, { color: colors.textSub }]}>{w.date}</Text>
+                      <Text style={[s.logValue, { color: colors.soc, flex: 1, textAlign: 'right', marginRight: 12 }]}>{w.kg} kg</Text>
                       <TouchableOpacity onPress={() => deleteWeightLog(w.id)} style={{ padding: 4 }}>
-                        <Ionicons name="trash-outline" size={18} color={colors.red} />
+                        <Ionicons name="trash-outline" size={17} color={colors.red} />
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -371,13 +409,19 @@ export default function HealthScreen() {
           {/* ── NUTRITION ── */}
           {activeTab === 'nutrition' && (
             <View>
-              <Text style={[gs.screenTitle, { color: colors.str }]}>Nutrition</Text>
-              <Text style={gs.screenSub}>Track food & macros</Text>
 
+              {/* Macro overview card */}
               <View style={gs.card}>
-                <Text style={[gs.cardTitle, { textAlign: 'center', marginBottom: 16 }]}>Today's Totals</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <View style={[s.logIconWrap, { backgroundColor: colors.str + '20' }]}><Ionicons name="restaurant" size={16} color={colors.str} /></View>
+                  <Text style={[gs.cardTitle, { marginBottom: 0 }]}>Today's Totals</Text>
+                </View>
+                {/* Big calorie display */}
+                <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                  <Text style={[s.bigStat, { color: colors.dis, fontSize: 44 }]}>{totalToday.calories.toFixed(0)}</Text>
+                  <Text style={[s.bigStatSub, { color: colors.textMuted }]}>kcal consumed</Text>
+                </View>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                  <MacroChip label="Kcal" value={totalToday.calories} color={colors.dis} bg={colors.surfaceAlt} />
                   <MacroChip label="Carbs" value={totalToday.carbs} color={colors.str} bg={colors.surfaceAlt} />
                   <MacroChip label="Protein" value={totalToday.protein} color={colors.foc} bg={colors.surfaceAlt} />
                   <MacroChip label="Fat" value={totalToday.fat} color={colors.vit} bg={colors.surfaceAlt} />
@@ -490,18 +534,39 @@ function MacroChip({ label, value, color, bg }: { label: string; value: number; 
 }
 
 const s = StyleSheet.create({
-  tabRow: { paddingVertical: 10, borderBottomWidth: 1 },
-  tabBtn: { flex: 1, paddingVertical: 10, borderRadius: 14, alignItems: 'center', gap: 5, borderWidth: 1.5 },
-  tabBtnText: { fontSize: 12, fontWeight: '700' },
-  bottleOuter: { width: 90, height: 220, borderRadius: 45, overflow: 'hidden', justifyContent: 'flex-end', borderWidth: 2, marginVertical: 16 },
-  bottleFill: { width: '100%', borderRadius: 45 },
-  waterAmount: { fontSize: 36, fontWeight: '900', marginBottom: 6 },
-  quickBtn: { flex: 1, borderRadius: 14, paddingVertical: 14, alignItems: 'center', borderWidth: 1.5, gap: 4 },
-  quickBtnText: { fontWeight: '700', fontSize: 14 },
-  periodBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center', borderWidth: 1.5 },
-  periodBtnText: { fontWeight: '700', fontSize: 14 },
-  macroChip: { borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', minWidth: 70 },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1,
+  },
+  headerSub: { fontSize: 10, fontWeight: '700', letterSpacing: 1.5, marginBottom: 2 },
+  headerTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
+  headerBadge: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  tabRow: { borderBottomWidth: 1 },
+  tabBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, gap: 6, borderWidth: 1 },
+  tabBtnText: { fontSize: 13, fontWeight: '700' },
+  // Big stat display
+  statIconLarge: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  bigStat: { fontSize: 52, fontWeight: '900', letterSpacing: -2, lineHeight: 58 },
+  bigStatSub: { fontSize: 14, fontWeight: '300', marginTop: 4 },
+  // Water
+  bottleOuter: { width: 64, height: 160, borderRadius: 32, overflow: 'hidden', justifyContent: 'flex-end', borderWidth: 2 },
+  bottleFill: { width: '100%', borderRadius: 32 },
+  waterProgressTrack: { height: 6, width: '100%', borderRadius: 3, overflow: 'hidden', marginTop: 16 },
+  waterProgressFill: { height: '100%', borderRadius: 3 },
+  resetBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, marginTop: 12 },
+  resetBtnText: { fontWeight: '700', fontSize: 13 },
+  quickBtn: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center', borderWidth: 1, gap: 4 },
+  quickBtnText: { fontWeight: '700', fontSize: 13 },
+  // Log rows
+  logIconWrap: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  logDate: { fontSize: 13, fontWeight: '400' },
+  logValue: { fontWeight: '800', fontSize: 17 },
+  // Period buttons
+  periodBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', borderWidth: 1 },
+  periodBtnText: { fontWeight: '700', fontSize: 13 },
+  // Nutrition
+  macroChip: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center', minWidth: 70 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalContainer: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 28, maxHeight: '80%', borderTopWidth: 1 },
-  libraryItem: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: 1.5, padding: 16, marginBottom: 10 },
+  modalContainer: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%', borderTopWidth: 1 },
+  libraryItem: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, padding: 14, marginBottom: 8 },
 });

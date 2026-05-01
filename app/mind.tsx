@@ -3,6 +3,7 @@ import {
   ScrollView, Text, View, StyleSheet, TouchableOpacity, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme, makeGlobalStyles } from '../lib/ThemeContext';
 import { useLayout } from '../lib/useLayout';
@@ -21,6 +22,50 @@ const DEFAULT_ACTIVITIES: MindActivity[] = [
   { id: '7', name: 'Meditation', statBoost: 'VIT' },
 ];
 
+// ── Circular Timer Ring ──
+function TimerRing({ progress, elapsed, isRunning, color }: {
+  progress: number; elapsed: string; isRunning: boolean; color: string;
+}) {
+  const size = 192;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = 80;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference * (1 - Math.min(progress, 1));
+
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} style={{ position: 'absolute' }}>
+        <Defs>
+          <LinearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor="#6366F1" />
+            <Stop offset="100%" stopColor="#818CF8" />
+          </LinearGradient>
+        </Defs>
+        {/* Track */}
+        <Circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={8} />
+        {/* Progress */}
+        <Circle
+          cx={cx} cy={cy} r={r} fill="none"
+          stroke="url(#timerGrad)"
+          strokeWidth={8}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          rotation="-90"
+          origin={`${cx}, ${cy}`}
+        />
+      </Svg>
+      <View style={{ alignItems: 'center' }}>
+        <Text style={[s.timerDisplay, { color: '#e4e1ed' }]}>{elapsed}</Text>
+        <Text style={[s.timerLabel, { color: 'rgba(199,196,215,0.7)' }]}>
+          {isRunning ? 'RUNNING' : 'PAUSED'}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export default function MindScreen() {
   const { colors } = useTheme();
   const layout = useLayout();
@@ -30,11 +75,18 @@ export default function MindScreen() {
     FOC: colors.foc, ART: colors.art, DIS: colors.dis, VIT: colors.vit, SOC: colors.soc, STR: colors.str,
   };
   const STAT_OPTS = ['FOC', 'ART', 'DIS', 'VIT', 'SOC', 'STR'];
+  const STAT_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+    FOC: 'flash', ART: 'color-palette', DIS: 'calendar', VIT: 'heart', SOC: 'people', STR: 'barbell',
+  };
+  const ACT_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+    Coding: 'code-slash', Reading: 'book', Drawing: 'pencil', Music: 'musical-notes',
+    'Deep Work': 'briefcase', Studying: 'school', Meditation: 'leaf',
+  };
 
   const [activities, setActivities] = useState<MindActivity[]>(DEFAULT_ACTIVITIES);
   const [todayLogs, setTodayLogs] = useState<MindLog[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<MindActivity | null>(null);
-  const [feeling, setFeeling] = useState(5);
+  const [feeling, setFeeling] = useState(7);
   const [newActivityName, setNewActivityName] = useState('');
   const [newActivityStat, setNewActivityStat] = useState('FOC');
   const [timerRunning, setTimerRunning] = useState(false);
@@ -51,7 +103,8 @@ export default function MindScreen() {
   useEffect(() => {
     if (timerRunning) {
       startTimeRef.current = Date.now() - elapsedSecs * 1000;
-      intervalRef.current = setInterval(() => setElapsedSecs(Math.floor((Date.now() - (startTimeRef.current ?? Date.now())) / 1000)), 1000);
+      intervalRef.current = setInterval(() =>
+        setElapsedSecs(Math.floor((Date.now() - (startTimeRef.current ?? Date.now())) / 1000)), 1000);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
@@ -63,7 +116,11 @@ export default function MindScreen() {
 
   const saveSession = async () => {
     if (!selectedActivity || elapsedSecs < 10) return;
-    const log: MindLog = { id: generateId(), date: today, activityId: selectedActivity.id, activityName: selectedActivity.name, statBoost: selectedActivity.statBoost, durationMinutes: Math.round(elapsedSecs / 60), feelingScore: feeling };
+    const log: MindLog = {
+      id: generateId(), date: today, activityId: selectedActivity.id,
+      activityName: selectedActivity.name, statBoost: selectedActivity.statBoost,
+      durationMinutes: Math.round(elapsedSecs / 60), feelingScore: feeling,
+    };
     const updated = await appendToList<MindLog>(KEYS.mindLogs, log);
     setTodayLogs(updated.filter((l) => l.date === today));
     resetTimer();
@@ -88,42 +145,74 @@ export default function MindScreen() {
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
     const sec = secs % 60;
-    return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}` : `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    return h > 0
+      ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+      : `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
   };
 
-  const fw = { alignSelf: 'center' as const, width: '100%' as const, maxWidth: layout.inputMaxWidth };
+  const totalTodayMins = todayLogs.reduce((s, l) => s + l.durationMinutes, 0);
+  const accentColor = selectedActivity ? (STAT_COLOR[selectedActivity.statBoost] ?? colors.accent) : colors.accent;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView style={gs.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center' }}>
-        <View style={{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20 }}>
+      {/* ── Header ── */}
+      <View style={[s.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+        <View>
+          <Text style={[s.headerSub, { color: colors.textMuted }]}>FOCUS MODE</Text>
+          <Text style={[s.headerTitle, { color: colors.text }]}>Focus</Text>
+        </View>
+        <View style={[s.streakBadge, { backgroundColor: colors.orange + '20' }]}>
+          <Ionicons name="flame" size={18} color={colors.orange} />
+          <Text style={[s.streakText, { color: colors.orange }]}>{todayLogs.length} sessions</Text>
+        </View>
+      </View>
 
-          <Text style={gs.screenTitle}>Focus</Text>
-          <Text style={gs.screenSub}>Deep work & skill tracker</Text>
+      <ScrollView style={gs.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+        <View style={{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20, alignSelf: 'center' }}>
+
+          {/* ── Today's Total ── */}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 6 }}>
+            <View>
+              <Text style={[s.currentFocusLabel, { color: colors.textMuted }]}>TODAY'S FOCUS</Text>
+              <Text style={[s.currentFocusValue, { color: colors.text }]}>
+                {Math.floor(totalTodayMins / 60) > 0
+                  ? `${Math.floor(totalTodayMins / 60)}h ${totalTodayMins % 60}m`
+                  : `${totalTodayMins}m`}
+              </Text>
+            </View>
+            {todayLogs.length > 0 && (
+              <Text style={[s.trendsText, { color: colors.soc }]}>
+                {todayLogs.length} session{todayLogs.length !== 1 ? 's' : ''} logged
+              </Text>
+            )}
+          </View>
 
           {/* ── Activity Picker ── */}
-          <Text style={gs.sectionTitle}>Select Activity</Text>
+          <Text style={[gs.sectionTitle, { marginTop: 20 }]}>Select Activity</Text>
           <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 16 }}
-            contentContainerStyle={{ paddingRight: 8, gap: 8, flexDirection: 'row' }}
+            horizontal showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 16, marginHorizontal: -layout.hPadding }}
+            contentContainerStyle={{ paddingHorizontal: layout.hPadding, paddingRight: 24, gap: 8 }}
           >
             {activities.map((a) => {
               const isActive = selectedActivity?.id === a.id;
               const statCol = STAT_COLOR[a.statBoost] ?? colors.accent;
+              const actIcon = ACT_ICONS[a.name] ?? 'star';
               return (
                 <TouchableOpacity
                   key={a.id}
                   style={[s.activityChip, {
-                    borderColor: isActive ? statCol : colors.border,
-                    backgroundColor: isActive ? statCol + '22' : colors.surface,
+                    borderColor: isActive ? statCol + '80' : colors.border,
+                    backgroundColor: isActive ? statCol + '18' : colors.surface,
                   }]}
                   onPress={() => setSelectedActivity(a)}
                 >
+                  <View style={[s.chipIconWrap, { backgroundColor: statCol + '20' }]}>
+                    <Ionicons name={actIcon} size={14} color={statCol} />
+                  </View>
                   <Text style={[s.activityText, { color: isActive ? statCol : colors.text }]}>{a.name}</Text>
-                  <View style={[s.statBadge, { backgroundColor: statCol + '30' }]}>
-                    <Text style={{ fontSize: 11, color: statCol, fontWeight: '800' }}>+{a.statBoost}</Text>
+                  <View style={[s.statBadge, { backgroundColor: statCol + '25' }]}>
+                    <Text style={{ fontSize: 9, color: statCol, fontWeight: '800', letterSpacing: 0.5 }}>+{a.statBoost}</Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -131,103 +220,165 @@ export default function MindScreen() {
           </ScrollView>
 
           {/* ── Timer Card ── */}
-          <View style={[gs.card, { alignItems: 'center', paddingVertical: 32 }]}>
+          <View style={[gs.card, { alignItems: 'center', paddingVertical: 28, position: 'relative', overflow: 'hidden' }]}>
+            {/* Glow */}
+            <View style={[s.timerGlow, { backgroundColor: accentColor + '15' }]} />
+
             {selectedActivity ? (
-              <View style={[s.statBadge, { backgroundColor: (STAT_COLOR[selectedActivity.statBoost] ?? colors.accent) + '22', marginBottom: 16 }]}>
-                <Text style={{ color: STAT_COLOR[selectedActivity.statBoost] ?? colors.accent, fontWeight: '700', fontSize: 16 }}>
+              <View style={[s.activityBadge, { backgroundColor: accentColor + '20', borderColor: accentColor + '40' }]}>
+                <Ionicons name={ACT_ICONS[selectedActivity.name] ?? 'star'} size={12} color={accentColor} />
+                <Text style={[s.activityBadgeText, { color: accentColor }]}>
                   {selectedActivity.name} · +{selectedActivity.statBoost}
                 </Text>
               </View>
             ) : (
-              <Text style={{ color: colors.textSub, fontSize: 16, marginBottom: 16 }}>Pick an activity above ↑</Text>
+              <Text style={[s.pickHint, { color: colors.textMuted }]}>Select an activity above ↑</Text>
             )}
 
-            <Text style={[s.timerText, { color: colors.art }]}>{formatTime(elapsedSecs)}</Text>
+            <View style={{ marginVertical: 24 }}>
+              <TimerRing
+                progress={elapsedSecs > 0 ? (elapsedSecs % (25 * 60)) / (25 * 60) : 0}
+                elapsed={formatTime(elapsedSecs)}
+                isRunning={timerRunning}
+                color={accentColor}
+              />
+            </View>
 
-            {/* Start / Reset buttons — fixed bottom row */}
-            <View style={[{ flexDirection: 'row', gap: 12, marginTop: 24 }, fw]}>
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
               <TouchableOpacity
-                style={[gs.btnPrimary, { flex: 1, backgroundColor: timerRunning ? colors.vit : colors.accent, opacity: selectedActivity ? 1 : 0.4 }]}
+                style={[gs.btnPrimary, {
+                  flex: 1,
+                  backgroundColor: timerRunning ? colors.vit : colors.accent,
+                  opacity: selectedActivity ? 1 : 0.4,
+                }]}
                 onPress={toggleTimer}
                 disabled={!selectedActivity}
               >
-                <Text style={gs.btnPrimaryText}>{timerRunning ? '⏸  Pause' : '▶  Start'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name={timerRunning ? 'pause' : 'play'} size={16} color="#fff" />
+                  <Text style={gs.btnPrimaryText}>{timerRunning ? 'Pause' : 'Start'}</Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity style={[gs.btnSecondary, { flex: 1 }]} onPress={resetTimer}>
-                <Text style={gs.btnSecondaryText}>↺  Reset</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="refresh" size={16} color={colors.text} />
+                  <Text style={gs.btnSecondaryText}>Reset</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* ── Feeling score (shows after timer runs) ── */}
+          {/* ── Feeling + Save (when timer has run) ── */}
           {elapsedSecs > 0 && (
             <View style={gs.card}>
-              <Text style={[gs.cardTitle, { textAlign: 'center', marginBottom: 16 }]}>How did it feel? {feeling}/10</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
+              <Text style={[gs.cardTitle, { marginBottom: 4 }]}>Session Quality</Text>
+              <Text style={[s.feelingHint, { color: colors.textMuted }]}>How focused were you? {feeling}/10</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 16, justifyContent: 'center' }}>
                 {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                  <TouchableOpacity key={n}
-                    style={[s.scoreBtn, { borderColor: colors.border, backgroundColor: colors.surfaceAlt }, feeling === n && { backgroundColor: colors.art, borderColor: colors.art }]}
-                    onPress={() => setFeeling(n)}>
+                  <TouchableOpacity
+                    key={n}
+                    style={[s.scoreBtn, {
+                      backgroundColor: feeling === n ? colors.art : colors.surfaceAlt,
+                      borderColor: feeling === n ? colors.art : colors.border,
+                    }]}
+                    onPress={() => setFeeling(n)}
+                  >
                     <Text style={[s.scoreBtnText, { color: feeling === n ? '#fff' : colors.textSub }]}>{n}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={{ color: colors.textSub, fontSize: 13, textAlign: 'center', marginBottom: 16 }}>1 = Terrible · 10 = Amazing</Text>
-              <View style={fw}>
-                <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.art }]} onPress={saveSession}>
+              <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.art }]} onPress={saveSession}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="checkmark-circle" size={18} color="#fff" />
                   <Text style={gs.btnPrimaryText}>Save Session</Text>
-                </TouchableOpacity>
-              </View>
+                </View>
+              </TouchableOpacity>
             </View>
           )}
 
-          {/* ── Today's logs ── */}
+          {/* ── Today's Sessions History ── */}
           {todayLogs.length > 0 && (
             <>
-              <Text style={gs.sectionTitle}>Today's Sessions</Text>
-              {todayLogs.map((l) => (
-                <View key={l.id} style={gs.card}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16, flex: 1 }}>{l.activityName}</Text>
-                    <Text style={{ color: colors.textSub, fontSize: 15, marginRight: 10 }}>{l.durationMinutes} min</Text>
-                    <TouchableOpacity onPress={() => deleteMindLog(l.id)} style={{ padding: 4 }}>
-                      <Ionicons name="trash-outline" size={18} color={colors.red} />
-                    </TouchableOpacity>
-                  </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                    <View style={[s.statBadge, { backgroundColor: (STAT_COLOR[l.statBoost] ?? colors.accent) + '22' }]}>
-                      <Text style={{ color: STAT_COLOR[l.statBoost] ?? colors.accent, fontSize: 13, fontWeight: '700' }}>+{l.statBoost}</Text>
+              <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Today's Sessions</Text>
+              {todayLogs.map((l, idx) => {
+                const col = STAT_COLOR[l.statBoost] ?? colors.accent;
+                const actIcon = ACT_ICONS[l.activityName] ?? 'star';
+                return (
+                  <View
+                    key={l.id}
+                    style={[gs.card, { padding: 14, marginBottom: 10,
+                      opacity: 1 - (idx * 0.12), // subtle fade for older sessions
+                    }]}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={[s.sessionIconWrap, { backgroundColor: colors.surfaceAlt }]}>
+                        <Ionicons name={actIcon} size={20} color={colors.textSub} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.sessionName, { color: colors.text }]}>{l.activityName}</Text>
+                        <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+                          <View style={[s.sessionTag, { backgroundColor: col + '18', borderColor: col + '30' }]}>
+                            <Text style={{ fontSize: 9, color: col, fontWeight: '800', letterSpacing: 0.5 }}>+{l.statBoost}</Text>
+                          </View>
+                          <View style={[s.sessionTag, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+                            <Text style={{ fontSize: 9, color: colors.textMuted, fontWeight: '600' }}>
+                              ⭐ {l.feelingScore}/10
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                        <Text style={[s.sessionDuration, { color: colors.text }]}>{l.durationMinutes}m</Text>
+                        <TouchableOpacity onPress={() => deleteMindLog(l.id)}>
+                          <Ionicons name="trash-outline" size={16} color={colors.red} />
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                    <Text style={{ color: colors.textSub, fontSize: 13 }}>Feeling: {l.feelingScore}/10</Text>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </>
           )}
 
           {/* ── Add Custom Activity ── */}
-          <Text style={gs.sectionTitle}>Add Custom Activity</Text>
+          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Add Activity</Text>
           <View style={gs.card}>
-            <View style={fw}>
-              <TextInput style={gs.input} placeholder="Activity name (e.g. Journaling)" placeholderTextColor={colors.textSub} value={newActivityName} onChangeText={setNewActivityName} />
-              <Text style={gs.label}>Stat boosted</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-                {STAT_OPTS.map((st) => (
-                  <TouchableOpacity key={st}
-                    style={[s.scoreBtn, { borderColor: colors.border, backgroundColor: colors.surfaceAlt, width: 52, height: 44, borderRadius: 12 },
-                      newActivityStat === st && { backgroundColor: STAT_COLOR[st], borderColor: STAT_COLOR[st] }]}
-                    onPress={() => setNewActivityStat(st)}>
-                    <Text style={[s.scoreBtnText, { color: newActivityStat === st ? '#fff' : colors.textSub, fontSize: 13 }]}>{st}</Text>
+            <TextInput
+              style={[gs.input, { color: colors.text }]}
+              placeholder="Activity name (e.g. Journaling)"
+              placeholderTextColor={colors.textMuted}
+              value={newActivityName}
+              onChangeText={setNewActivityName}
+            />
+            <Text style={[gs.label, { marginBottom: 8 }]}>Stat Boost</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+              {STAT_OPTS.map((st) => {
+                const stCol = STAT_COLOR[st];
+                const stIcon = STAT_ICONS[st] ?? 'star';
+                return (
+                  <TouchableOpacity
+                    key={st}
+                    style={[s.statOptBtn, {
+                      backgroundColor: newActivityStat === st ? stCol + '20' : colors.surfaceAlt,
+                      borderColor: newActivityStat === st ? stCol : colors.border,
+                    }]}
+                    onPress={() => setNewActivityStat(st)}
+                  >
+                    <Ionicons name={stIcon} size={12} color={newActivityStat === st ? stCol : colors.textMuted} />
+                    <Text style={[s.statOptText, { color: newActivityStat === st ? stCol : colors.textSub }]}>{st}</Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-              <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.accent }]} onPress={addActivity}>
-                <Text style={gs.btnPrimaryText}>Add Activity</Text>
-              </TouchableOpacity>
+                );
+              })}
             </View>
+            <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.accent }]} onPress={addActivity}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="add-circle" size={18} color="#fff" />
+                <Text style={gs.btnPrimaryText}>Add Activity</Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
-          <View style={{ height: 30 }} />
+          <View style={{ height: 20 }} />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -235,25 +386,46 @@ export default function MindScreen() {
 }
 
 const s = StyleSheet.create({
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1,
+  },
+  headerSub: { fontSize: 10, fontWeight: '700', letterSpacing: 1.5, marginBottom: 2 },
+  headerTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
+  streakBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 },
+  streakText: { fontWeight: '700', fontSize: 13 },
+  currentFocusLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1.5, marginBottom: 4 },
+  currentFocusValue: { fontSize: 42, fontWeight: '900', letterSpacing: -1.5, lineHeight: 48 },
+  trendsText: { fontSize: 13, fontWeight: '600', marginBottom: 6 },
   activityChip: {
-    borderRadius: 16,
-    borderWidth: 1.5,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    alignItems: 'center',
-    gap: 6,
-    minWidth: 90,
+    borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10,
+    alignItems: 'center', gap: 6, minWidth: 90,
   },
-  activityText: { fontSize: 14, fontWeight: '700' },
-  statBadge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  timerText: { fontSize: 64, fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: 2 },
+  chipIconWrap: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  activityText: { fontSize: 13, fontWeight: '700' },
+  statBadge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
+  timerGlow: { position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: 80 },
+  activityBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, borderWidth: 1,
+  },
+  activityBadgeText: { fontWeight: '700', fontSize: 13 },
+  pickHint: { fontSize: 14, fontStyle: 'italic' },
+  timerDisplay: { fontSize: 52, fontWeight: '900', letterSpacing: 2, fontVariant: ['tabular-nums'] },
+  timerLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 2, marginTop: 2 },
+  feelingHint: { fontSize: 13, marginBottom: 4 },
   scoreBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 42, height: 42, borderRadius: 10, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center',
   },
-  scoreBtnText: { fontWeight: '700', fontSize: 15 },
+  scoreBtnText: { fontWeight: '700', fontSize: 14 },
+  sessionIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  sessionName: { fontSize: 14, fontWeight: '700' },
+  sessionTag: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1 },
+  sessionDuration: { fontSize: 16, fontWeight: '800', letterSpacing: -0.5 },
+  statOptBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1,
+  },
+  statOptText: { fontSize: 12, fontWeight: '700' },
 });

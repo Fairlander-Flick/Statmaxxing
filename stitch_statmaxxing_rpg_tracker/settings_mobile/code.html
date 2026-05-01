@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;family=Inter:wght@600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-surface-variant": "#c7c4d7",
+                "surface-container-high": "#292932",
+                "on-tertiary-fixed-variant": "#703700",
+                "primary-container": "#8083ff",
+                "inverse-surface": "#e4e1ed",
+                "surface-container": "#1f1f27",
+                "tertiary-container": "#d97721",
+                "surface": "#13131b",
+                "on-secondary-fixed": "#1b1b1f",
+                "on-primary-fixed-variant": "#2f2ebe",
+                "tertiary-fixed": "#ffdcc5",
+                "outline-variant": "#464554",
+                "on-primary-container": "#0d0096",
+                "on-secondary-fixed-variant": "#47464b",
+                "on-tertiary-fixed": "#301400",
+                "on-surface": "#e4e1ed",
+                "secondary-container": "#47464b",
+                "on-error-container": "#ffdad6",
+                "on-error": "#690005",
+                "tertiary": "#ffb783",
+                "surface-variant": "#34343d",
+                "on-tertiary": "#4f2500",
+                "on-primary": "#1000a9",
+                "secondary": "#c8c5cb",
+                "on-secondary": "#303034",
+                "inverse-primary": "#494bd6",
+                "surface-tint": "#c0c1ff",
+                "primary-fixed-dim": "#c0c1ff",
+                "surface-container-low": "#1b1b23",
+                "surface-dim": "#13131b",
+                "secondary-fixed-dim": "#c8c5cb",
+                "surface-bright": "#393841",
+                "on-tertiary-container": "#452000",
+                "tertiary-fixed-dim": "#ffb783",
+                "secondary-fixed": "#e4e1e7",
+                "background": "#13131b",
+                "surface-container-lowest": "#0d0d15",
+                "error-container": "#93000a",
+                "primary-fixed": "#e1e0ff",
+                "on-secondary-container": "#b6b4ba",
+                "error": "#ffb4ab",
+                "on-background": "#e4e1ed",
+                "inverse-on-surface": "#303038",
+                "surface-container-highest": "#34343d",
+                "outline": "#908fa0",
+                "primary": "#c0c1ff",
+                "on-primary-fixed": "#07006c"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "base": "4px",
+                "xs": "4px",
+                "container-max": "1200px",
+                "gutter": "24px",
+                "xl": "48px",
+                "md": "16px",
+                "lg": "24px",
+                "sm": "8px"
+            },
+            "fontFamily": {
+                "body-lg": ["Plus Jakarta Sans"],
+                "h2": ["Plus Jakarta Sans"],
+                "body-md": ["Plus Jakarta Sans"],
+                "h1": ["Plus Jakarta Sans"],
+                "display-xl": ["Plus Jakarta Sans"],
+                "label-caps": ["Inter"]
+            },
+            "fontSize": {
+                "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "300"}],
+                "h2": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "300"}],
+                "h1": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "display-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pb-safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen">
+<header class="bg-[#0F0F13]/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-40 h-16 w-full">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface cursor-pointer">arrow_back</span>
+<h1 class="text-xl font-black text-white tracking-tight">Settings</h1>
+</div>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-gray-400">notifications</span>
+<span class="material-symbols-outlined text-gray-400">contrast</span>
+</div>
+</header>
+<main class="px-6 py-8 pb-32 max-w-md mx-auto">
+<section class="mb-10 text-center">
+<div class="relative inline-block mb-4">
+<img alt="Alex Johnson" class="w-24 h-24 rounded-full border-2 border-primary-container object-cover" data-alt="high-detail portrait of a fit athletic man in professional sportswear, clean studio lighting, dark background, premium cinematic aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVsJkJXlyBukOQliwI2yM9fc5xkPN1kcFCAOXyR9O3DNsrfpm5fvigpoU0g2fmnvZVQuH4Z1viXDbFNj_uu2ct-r_Rh4xEjPnXhillO-0qkQuZ5WKqVOy8tLSaFB9sv76Z6MPaneoCTdNZyqsPhMAqH8Xw-JKw1vOsfLFm3gjKrdjqSgAgzMs1sllbd_QhP-ME7XD8QaFdlMw7wPQ3Cvwb8p3xfW0UDFuPo9ADaz5cKjfHgxB1ZDSJaOkkctT7rVnhxSmNpebo1WR1"/>
+<div class="absolute bottom-0 right-0 bg-primary-container p-1 rounded-full border-2 border-[#16161E]">
+<span class="material-symbols-outlined text-on-primary-container text-sm" style="font-variation-settings: 'FILL' 1;">edit</span>
+</div>
+</div>
+<h2 class="font-h1 text-h1 text-white mb-1">Alex Johnson</h2>
+<div class="flex justify-center gap-4 text-on-surface-variant font-body-md">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">straighten</span> 180cm</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">cake</span> 28 years</span>
+</div>
+</section>
+<section class="space-y-6">
+<div>
+<h3 class="text-label-caps font-label-caps text-on-surface-variant uppercase mb-4 tracking-widest px-2">Preferences</h3>
+<div class="bg-[#16161E] rounded-xl border border-white/10 overflow-hidden">
+<div class="flex items-center justify-between p-4 border-b border-white/5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">scale</span>
+<span class="font-body-md text-white">Units</span>
+</div>
+<span class="text-on-surface-variant text-sm font-medium">kg, ml</span>
+</div>
+<div class="flex items-center justify-between p-4 border-b border-white/5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">notifications</span>
+<span class="font-body-md text-white">Notifications</span>
+</div>
+<div class="w-10 h-6 bg-primary-container rounded-full relative flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full ml-auto"></div>
+</div>
+</div>
+<div class="flex items-center justify-between p-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">dark_mode</span>
+<span class="font-body-md text-white">Dark Theme</span>
+</div>
+<div class="w-10 h-6 bg-primary-container rounded-full relative flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full ml-auto"></div>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h3 class="text-label-caps font-label-caps text-on-surface-variant uppercase mb-4 tracking-widest px-2">Data Management</h3>
+<div class="bg-[#16161E] rounded-xl border border-white/10 overflow-hidden">
+<button class="w-full flex items-center justify-between p-4 border-b border-white/5 text-left active:bg-white/5 transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">ios_share</span>
+<span class="font-body-md text-white">Export Data</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-4 text-left active:bg-error-container/20 transition-colors group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error">delete_forever</span>
+<span class="font-body-md text-error">Clear All Data</span>
+</div>
+</button>
+</div>
+</div>
+</section>
+<footer class="mt-12 text-center">
+<p class="text-label-caps font-label-caps text-on-surface-variant opacity-50">APP VERSION v1.2.0</p>
+<p class="text-[10px] text-on-surface-variant/30 mt-1 uppercase tracking-tighter">StatsEngine Technical Athlete Suite</p>
+</footer>
+</main>
+<nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center pt-3 pb-safe-bottom bg-[#16161E]/90 backdrop-blur-xl border-t border-white/5 shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
+<div class="flex flex-col items-center text-gray-500 active:bg-white/5">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium">Home</span>
+</div>
+<div class="flex flex-col items-center text-gray-500 active:bg-white/5">
+<span class="material-symbols-outlined">monitor_weight</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium">Weight</span>
+</div>
+<div class="flex flex-col items-center text-gray-500 active:bg-white/5">
+<span class="material-symbols-outlined">bedtime</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium">Sleep</span>
+</div>
+<div class="flex flex-col items-center text-gray-500 active:bg-white/5">
+<span class="material-symbols-outlined">restaurant</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium">Nutrition</span>
+</div>
+<div class="flex flex-col items-center text-[#6366F1] active:bg-white/5">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium">Profile</span>
+</div>
+</nav>
+</body></html>
