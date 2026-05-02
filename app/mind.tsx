@@ -84,6 +84,9 @@ export default function MindScreen() {
   const [newActivityStat, setNewActivityStat] = useState('FOC');
   const [timerRunning, setTimerRunning] = useState(false);
   const [elapsedSecs, setElapsedSecs] = useState(0);
+  const [entryMode, setEntryMode] = useState<'timer' | 'manual'>('timer');
+  const [manualHours, setManualHours] = useState('');
+  const [manualMins, setManualMins] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const today = toDay();
@@ -106,6 +109,22 @@ export default function MindScreen() {
 
   const toggleTimer = () => { if (!selectedActivity) return; setTimerRunning((r) => !r); };
   const resetTimer = () => { setTimerRunning(false); setElapsedSecs(0); };
+
+  const saveManualSession = async () => {
+    const h = parseInt(manualHours || '0');
+    const m = parseInt(manualMins || '0');
+    const totalMins = h * 60 + m;
+    if (!selectedActivity || totalMins <= 0) return;
+    const log: MindLog = {
+      id: generateId(), date: today,
+      activityId: selectedActivity.id, activityName: selectedActivity.name,
+      statBoost: selectedActivity.statBoost,
+      durationMinutes: totalMins, feelingScore: feeling,
+    };
+    const updated = await appendToList<MindLog>(KEYS.mindLogs, log);
+    setTodayLogs(updated.filter((l) => l.date === today));
+    setManualHours(''); setManualMins('');
+  };
 
   const saveSession = async () => {
     if (!selectedActivity || elapsedSecs < 10) return;
@@ -209,7 +228,101 @@ export default function MindScreen() {
             })}
           </ScrollView>
 
+          {/* ── Mode Toggle ── */}
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+            {(['timer', 'manual'] as const).map((mode) => (
+              <TouchableOpacity
+                key={mode}
+                onPress={() => setEntryMode(mode)}
+                style={[s.modeBtn, {
+                  backgroundColor: entryMode === mode ? colors.accentDim : colors.surfaceAlt,
+                  borderColor: entryMode === mode ? colors.accent : colors.border,
+                }]}
+              >
+                <Ionicons
+                  name={mode === 'timer' ? 'timer-outline' : 'create-outline'}
+                  size={15}
+                  color={entryMode === mode ? colors.accent : colors.textSub}
+                />
+                <Text style={[s.modeBtnText, { color: entryMode === mode ? colors.accent : colors.textSub }]}>
+                  {mode === 'timer' ? 'Timer' : 'Log Manually'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* ── Manual Entry Card ── */}
+          {entryMode === 'manual' && (
+            <View style={[gs.card, { alignItems: 'center', paddingVertical: 28 }]}>
+              {selectedActivity ? (
+                <View style={[s.activityBadge, { backgroundColor: accentColor + '20', borderColor: accentColor + '40', marginBottom: 20 }]}>
+                  <Ionicons name={ACT_ICONS[selectedActivity.name] ?? 'star'} size={12} color={accentColor} />
+                  <Text style={[s.activityBadgeText, { color: accentColor }]}>{selectedActivity.name}</Text>
+                </View>
+              ) : (
+                <Text style={[s.pickHint, { color: colors.textMuted, marginBottom: 20 }]}>Select an activity above ↑</Text>
+              )}
+
+              <Text style={[s.currentFocusLabel, { color: colors.textMuted, marginBottom: 12 }]}>HOW LONG DID YOU WORK?</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                <View style={{ alignItems: 'center' }}>
+                  <TextInput
+                    style={[s.manualInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                    placeholder="0"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="numeric"
+                    value={manualHours}
+                    onChangeText={setManualHours}
+                    maxLength={2}
+                  />
+                  <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: '600', letterSpacing: 1, marginTop: 6 }}>HRS</Text>
+                </View>
+                <Text style={{ color: colors.textMuted, fontSize: 32, fontWeight: '200', marginBottom: 18 }}>:</Text>
+                <View style={{ alignItems: 'center' }}>
+                  <TextInput
+                    style={[s.manualInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                    placeholder="00"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="numeric"
+                    value={manualMins}
+                    onChangeText={setManualMins}
+                    maxLength={2}
+                  />
+                  <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: '600', letterSpacing: 1, marginTop: 6 }}>MIN</Text>
+                </View>
+              </View>
+
+              <Text style={[gs.label, { marginBottom: 8 }]}>Session quality: {feeling}/10</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 24, justifyContent: 'center' }}>
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                  <TouchableOpacity
+                    key={n}
+                    style={[s.scoreBtn, {
+                      backgroundColor: feeling === n ? colors.accent : colors.surfaceAlt,
+                      borderColor: feeling === n ? colors.accent : colors.border,
+                    }]}
+                    onPress={() => setFeeling(n)}
+                  >
+                    <Text style={[s.scoreBtnText, { color: feeling === n ? '#fff' : colors.textSub }]}>{n}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={[gs.btnPrimary, {
+                  width: '100%',
+                  opacity: selectedActivity && (parseInt(manualHours || '0') * 60 + parseInt(manualMins || '0')) > 0 ? 1 : 0.4,
+                }]}
+                onPress={saveManualSession}
+                disabled={!selectedActivity}
+              >
+                <Text style={gs.btnPrimaryText}>Save Session</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* ── Timer Card ── */}
+          {entryMode === 'timer' && (
           <View style={[gs.card, { alignItems: 'center', paddingVertical: 28, position: 'relative', overflow: 'hidden' }]}>
             {/* Glow */}
             <View style={[s.timerGlow, { backgroundColor: accentColor + '15' }]} />
@@ -257,9 +370,10 @@ export default function MindScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          )}
 
           {/* ── Feeling + Save (when timer has run) ── */}
-          {elapsedSecs > 0 && (
+          {entryMode === 'timer' && elapsedSecs > 0 && (
             <View style={gs.card}>
               <Text style={[gs.cardTitle, { marginBottom: 4 }]}>Session Quality</Text>
               <Text style={[s.feelingHint, { color: colors.textMuted }]}>How focused were you? {feeling}/10</Text>
@@ -410,6 +524,17 @@ const s = StyleSheet.create({
   sessionName: { fontSize: 14, fontWeight: '700' },
   sessionTag: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1 },
   sessionDuration: { fontSize: 16, fontWeight: '800', letterSpacing: -0.5 },
+  modeBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 11, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1,
+    justifyContent: 'center',
+  },
+  modeBtnText: { fontSize: 14, fontWeight: '500' },
+  manualInput: {
+    width: 72, height: 72, textAlign: 'center',
+    fontSize: 30, fontWeight: '300', letterSpacing: -0.5,
+    borderRadius: 12, borderWidth: 1,
+  },
   statOptBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1,
