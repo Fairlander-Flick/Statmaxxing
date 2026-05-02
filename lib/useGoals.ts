@@ -30,12 +30,9 @@ export function useGoals(): {
   }, []);
 
   const setGoal = async <K extends keyof Goals>(key: K, value: Goals[K]) => {
-    let nextGoals: Goals = goals;
-    setGoals(prev => {
-      nextGoals = { ...prev, [key]: value };
-      return nextGoals;
-    });
-    await saveData(KEYS.goalsConfig, nextGoals);
+    const updated = { ...goals, [key]: value };
+    setGoals(updated);
+    await saveData(KEYS.goalsConfig, updated);
   };
 
   return { goals, setGoal };

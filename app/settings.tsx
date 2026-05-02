@@ -392,7 +392,7 @@ export default function SettingsScreen() {
             {/* Fat */}
             <View style={[s.settingRow, { borderBottomWidth: 0 }]}>
               <View style={[s.settingIcon, { backgroundColor: colors.art + '20' }]}>
-                <Ionicons name="water-outline" size={18} color={colors.art} />
+                <Ionicons name="ellipse-outline" size={18} color={colors.art} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.settingLabel, { color: colors.text }]}>Fat</Text>

@@ -171,7 +171,7 @@ export default function HealthScreen() {
     setTodayNutrition(updated.filter((l) => l.date === today));
   };
 
-  const waterPct = Math.min((waterToday / goals.waterMl) * 100, 100);
+  const waterPct = goals.waterMl > 0 ? Math.min((waterToday / goals.waterMl) * 100, 100) : 0;
   
   let periodWeights = weightHistory.slice(-(weightPeriod));
   if (periodWeights.length > 50) {

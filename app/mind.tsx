@@ -92,6 +92,8 @@ export default function MindScreen() {
   const [phaseStartSecs, setPhaseStartSecs] = useState(0);
   const [workSecsAccum, setWorkSecsAccum] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerStartRef = useRef<number | null>(null);
+  const elapsedAtStartRef = useRef(0);
   const entryModeRef = useRef(entryMode);
   const pomodoroPhaseRef = useRef(pomodoroPhase);
   const phaseStartSecsRef = useRef(phaseStartSecs);
@@ -108,28 +110,28 @@ export default function MindScreen() {
 
   useEffect(() => {
     if (timerRunning) {
+      timerStartRef.current = Date.now();
+      elapsedAtStartRef.current = elapsedSecs;
       intervalRef.current = setInterval(() => {
-        setElapsedSecs(prev => {
-          const next = prev + 1;
-          if (entryModeRef.current === 'pomodoro') {
-            const phaseElapsed = next - phaseStartSecsRef.current;
-            const phaseDuration = pomodoroPhaseRef.current === 'work' ? 25 * 60 : 5 * 60;
-            if (phaseElapsed >= phaseDuration) {
-              if (pomodoroPhaseRef.current === 'work') {
-                setWorkSecsAccum(w => w + phaseDuration);
-                setPomodoroPhase('break');
-                pomodoroPhaseRef.current = 'break';
-              } else {
-                setPomodoroPhase('work');
-                pomodoroPhaseRef.current = 'work';
-                setPomodoroRound(r => r + 1);
-              }
-              setPhaseStartSecs(next);
-              phaseStartSecsRef.current = next;
+        const elapsed = elapsedAtStartRef.current + Math.floor((Date.now() - (timerStartRef.current ?? Date.now())) / 1000);
+        setElapsedSecs(elapsed);
+        if (entryModeRef.current === 'pomodoro') {
+          const phaseElapsed = elapsed - phaseStartSecsRef.current;
+          const phaseDuration = pomodoroPhaseRef.current === 'work' ? 25 * 60 : 5 * 60;
+          if (phaseElapsed >= phaseDuration) {
+            if (pomodoroPhaseRef.current === 'work') {
+              setWorkSecsAccum(w => w + phaseDuration);
+              setPomodoroPhase('break');
+              pomodoroPhaseRef.current = 'break';
+            } else {
+              setPomodoroPhase('work');
+              pomodoroPhaseRef.current = 'work';
+              setPomodoroRound(r => r + 1);
             }
+            setPhaseStartSecs(elapsed);
+            phaseStartSecsRef.current = elapsed;
           }
-          return next;
-        });
+        }
       }, 1000);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
