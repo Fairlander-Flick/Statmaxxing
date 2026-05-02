@@ -24,10 +24,12 @@ export async function appendToList<T>(key: string, item: T): Promise<T[]> {
 
 // Storage keys
 export const KEYS = {
+  // Settings
+  goalsConfig: 'settings:goals',
+
   // Health
   sleepLogs: 'health:sleep',
   waterLogs: 'health:water',
-  waterGoal: 'health:waterGoal',
   weightLogs: 'health:weight',
   nutritionLogs: 'health:nutrition',
   foodLibrary: 'health:foodLibrary',
@@ -169,6 +171,30 @@ export type SocialLog = {
   personId: string;
   personName: string;
   minutes: number;
+};
+
+export type Goals = {
+  steps: number;
+  sleepHours: number;
+  waterMl: number;
+  focusMinutes: number;
+  weightTargetKg: number | null;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+};
+
+export const DEFAULT_GOALS: Goals = {
+  steps: 8000,
+  sleepHours: 7.5,
+  waterMl: 2500,
+  focusMinutes: 90,
+  weightTargetKg: null,
+  calories: 2500,
+  proteinG: 150,
+  carbsG: 300,
+  fatG: 70,
 };
 
 // Utility: today's ISO date string
