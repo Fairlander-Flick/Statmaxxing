@@ -462,6 +462,17 @@ export default function HealthScreen() {
                 </View>
               </View>
 
+              {/* Macro progress bars */}
+              {(goals.calories > 0 || goals.proteinG > 0 || goals.carbsG > 0 || goals.fatG > 0) && (
+                <View style={gs.card}>
+                  <Text style={[gs.cardTitle, { marginBottom: 12 }]}>Progress to Goals</Text>
+                  <MacroBar label="Calories" actual={totalToday.calories} target={goals.calories} color={colors.vit} unit="kcal" />
+                  <MacroBar label="Protein"  actual={totalToday.protein}  target={goals.proteinG} color={colors.vit} unit="g" />
+                  <MacroBar label="Carbs"    actual={totalToday.carbs}    target={goals.carbsG}   color={colors.vit} unit="g" />
+                  <MacroBar label="Fat"      actual={totalToday.fat}      target={goals.fatG}     color={colors.vit} unit="g" />
+                </View>
+              )}
+
               <View style={[{ flexDirection: 'row', gap: 10, marginBottom: 14 }, fw]}>
                 {foodLibrary.length > 0 && (
                   <TouchableOpacity style={[gs.btnPrimary, { flex: 1, backgroundColor: colors.str }]} onPress={() => setShowLibraryModal(true)}>
@@ -554,6 +565,29 @@ export default function HealthScreen() {
         </View>
       </Modal>
     </SafeAreaView>
+  );
+}
+
+function MacroBar({ label, actual, target, color, unit }: {
+  label: string; actual: number; target: number; color: string; unit: string;
+}) {
+  const { colors } = useTheme();
+  if (target <= 0) return null;
+  const pct = (actual / target) * 100;
+  return (
+    <View style={{ marginBottom: 8 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+        <Text style={{ color: colors.textSub, fontSize: 12, fontWeight: '600' }}>{label}</Text>
+        <Text style={{ color: colors.textSub, fontSize: 12 }}>
+          {actual.toFixed(0)} / {target} {unit}
+          {'  '}
+          <Text style={{ color: pct >= 100 ? color : colors.textMuted }}>{pct.toFixed(0)}%</Text>
+        </Text>
+      </View>
+      <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.surfaceAlt, overflow: 'hidden' }}>
+        <View style={{ height: 6, borderRadius: 3, backgroundColor: color, width: `${Math.min(pct, 100)}%` }} />
+      </View>
+    </View>
   );
 }
 
