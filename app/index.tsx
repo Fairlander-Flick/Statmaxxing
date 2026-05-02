@@ -12,6 +12,7 @@ import {
   loadData, KEYS, toDay,
   SleepLog, WaterLog, WeightLog, WorkoutLog, MindLog, SocialLog, NutritionLog, StepLog,
 } from '../lib/storage';
+import { useGoals } from '../lib/useGoals';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type DayPoint = { date: string; value: number; extras?: Record<string, number> };
@@ -86,6 +87,34 @@ function CompareBars({ pairs, labels, accent, borderColor }: {
           </View>
         );
       })}
+    </View>
+  );
+}
+
+// ─── TodayChip ───────────────────────────────────────────────────────────────
+function TodayChip({ icon, color, actual, goal, unit }: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  color: string; actual: number | null; goal: number; unit: string;
+}) {
+  const { colors } = useTheme();
+  if (goal <= 0) return null;
+  const met = actual !== null && actual >= goal;
+  return (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', gap: 6,
+      paddingHorizontal: 10, paddingVertical: 6,
+      borderRadius: 8, borderWidth: 1,
+      borderColor: met ? color : colors.border,
+      backgroundColor: colors.surface,
+    }}>
+      {met
+        ? <Ionicons name="checkmark-circle" size={14} color={color} />
+        : <Ionicons name={icon} size={14} color={actual === null ? colors.textMuted : color} />}
+      {met
+        ? <Text style={{ fontSize: 12, color, fontWeight: '600' }}>Done</Text>
+        : actual === null
+          ? <Text style={{ fontSize: 12, color: colors.textMuted }}>— / {goal} {unit}</Text>
+          : <Text style={{ fontSize: 12, color: colors.textSub }}>{actual} / {goal} {unit}</Text>}
     </View>
   );
 }
@@ -370,6 +399,7 @@ export default function DashboardScreen() {
   const gs = makeGlobalStyles(colors);
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === 'web' && width >= 768;
+  const { goals } = useGoals();
 
   // Graph selector state
   const [selectedGraphs, setSelectedGraphs] = useState<string[]>(['momentum', 'compare']);
@@ -384,9 +414,9 @@ export default function DashboardScreen() {
   const [selectedWeekIndex, setSelectedWeekIndex] = useState<number>(51);
   const [weeklyHeatmap, setWeeklyHeatmap] = useState<number[]>([]);
   const [todaySummary, setTodaySummary] = useState<{
-    sleep: number | null; water: number; waterGoal: number; workouts: number;
+    sleep: number | null; water: number; workouts: number;
     mindMins: number; socialMins: number; calories: number; weight: number | null; steps: number;
-  }>({ sleep: null, water: 0, waterGoal: 2500, workouts: 0, mindMins: 0, socialMins: 0, calories: 0, weight: null, steps: 0 });
+  }>({ sleep: null, water: 0, workouts: 0, mindMins: 0, socialMins: 0, calories: 0, weight: null, steps: 0 });
   const [weeklySummary, setWeeklySummary] = useState<{
     sleepHrs: number; waterMl: number; workouts: number; mindMins: number;
     socialMins: number; calories: number; weightDiff: number; steps: number;
@@ -409,11 +439,10 @@ export default function DashboardScreen() {
   const today = toDay();
 
   const computeStats = useCallback(async () => {
-    const [sleepLogs, waterLogs, waterGoal, weightLogs, workoutLogs, mindLogs, socialLogs, nutritionLogs, stepLogs] =
+    const [sleepLogs, waterLogs, weightLogs, workoutLogs, mindLogs, socialLogs, nutritionLogs, stepLogs] =
       await Promise.all([
         loadData<SleepLog[]>(KEYS.sleepLogs, []),
         loadData<WaterLog[]>(KEYS.waterLogs, []),
-        loadData<number>(KEYS.waterGoal, 2500),
         loadData<WeightLog[]>(KEYS.weightLogs, []),
         loadData<WorkoutLog[]>(KEYS.workoutLogs, []),
         loadData<MindLog[]>(KEYS.mindLogs, []),
@@ -431,7 +460,7 @@ export default function DashboardScreen() {
     const tCal = nutritionLogs.filter(l => l.date === today).reduce((s, l) => s + l.macros.calories, 0);
     const tWeight = weightLogs.find(l => l.date === today)?.kg ?? null;
     const tSteps = stepLogs.find(l => l.date === today)?.steps ?? 0;
-    setTodaySummary({ sleep: tSleep, water: tWater, waterGoal, workouts: tWork, mindMins: tMind, socialMins: tSoc, calories: tCal, weight: tWeight, steps: tSteps });
+    setTodaySummary({ sleep: tSleep, water: tWater, workouts: tWork, mindMins: tMind, socialMins: tSoc, calories: tCal, weight: tWeight, steps: tSteps });
 
     // This week
     const dAgoStart = (51 - selectedWeekIndex) * 7;
@@ -608,7 +637,7 @@ export default function DashboardScreen() {
       <View style={ss.ringGrid}>
         {[
           { label: 'STEPS', value: todaySummary.steps.toLocaleString(), goal: '/ 8k', pct: todaySummary.steps / 8000, color: colors.str },
-          { label: 'WATER', value: `${(todaySummary.water / 1000).toFixed(1)}L`, goal: `/ ${(todaySummary.waterGoal / 1000).toFixed(1)}L`, pct: todaySummary.water / todaySummary.waterGoal, color: colors.foc },
+          { label: 'WATER', value: `${(todaySummary.water / 1000).toFixed(1)}L`, goal: `/ ${(goals.waterMl / 1000).toFixed(1)}L`, pct: todaySummary.water / goals.waterMl, color: colors.foc },
           { label: 'SLEEP', value: `${todaySummary.sleep ?? 0}h`, goal: '/ 7.5h', pct: (todaySummary.sleep ?? 0) / 7.5, color: colors.vit },
           { label: 'FOCUS', value: `${todaySummary.mindMins}m`, goal: '/ 90m', pct: todaySummary.mindMins / 90, color: colors.accent },
         ].map(r => (
@@ -629,7 +658,7 @@ export default function DashboardScreen() {
       <Text style={[gs.sectionTitle, { marginBottom: 4 }]}>TODAY</Text>
       <StatRow icon="trending-up" label="Steps" value={todaySummary.steps.toLocaleString()} color={colors.str} />
       <StatRow icon="moon" label="Sleep" value={`${todaySummary.sleep ?? 0}h`} color={colors.vit} sub={todaySummary.sleep ? 'Logged' : 'Not logged'} />
-      <StatRow icon="water" label="Water" value={`${todaySummary.water} ml`} color={colors.foc} sub={`Goal: ${todaySummary.waterGoal} ml`} />
+      <StatRow icon="water" label="Water" value={`${todaySummary.water} ml`} color={colors.foc} sub={`Goal: ${goals.waterMl} ml`} />
       <StatRow icon="nutrition" label="Calories" value={`${todaySummary.calories.toFixed(0)} kcal`} color={colors.dis} />
       <StatRow icon="barbell" label="Workouts" value={`${todaySummary.workouts} session${todaySummary.workouts !== 1 ? 's' : ''}`} color={colors.str} />
       <StatRow icon="timer" label="Focus" value={`${todaySummary.mindMins} min`} color={colors.accent} />
@@ -794,6 +823,14 @@ export default function DashboardScreen() {
           )}
         </View>
 
+        {/* Today Goal Chips — web */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 28, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <TodayChip icon="footsteps-outline" color={colors.str} actual={todaySummary.steps > 0 ? todaySummary.steps : null} goal={goals.steps} unit="steps" />
+          <TodayChip icon="water-outline" color={colors.vit} actual={todaySummary.water > 0 ? todaySummary.water : null} goal={goals.waterMl} unit="ml" />
+          <TodayChip icon="moon-outline" color={colors.art} actual={todaySummary.sleep} goal={goals.sleepHours} unit="h" />
+          <TodayChip icon="timer-outline" color={colors.foc} actual={todaySummary.mindMins > 0 ? todaySummary.mindMins : null} goal={goals.focusMinutes} unit="min" />
+        </View>
+
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
           contentContainerStyle={{ padding: 24, paddingBottom: 60 }}
@@ -845,6 +882,19 @@ export default function DashboardScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Today Goal Chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ flexDirection: 'row', gap: 8, paddingHorizontal: layout.hPadding, paddingVertical: 10 }}
+        style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
+      >
+        <TodayChip icon="footsteps-outline" color={colors.str} actual={todaySummary.steps > 0 ? todaySummary.steps : null} goal={goals.steps} unit="steps" />
+        <TodayChip icon="water-outline" color={colors.vit} actual={todaySummary.water > 0 ? todaySummary.water : null} goal={goals.waterMl} unit="ml" />
+        <TodayChip icon="moon-outline" color={colors.art} actual={todaySummary.sleep} goal={goals.sleepHours} unit="h" />
+        <TodayChip icon="timer-outline" color={colors.foc} actual={todaySummary.mindMins > 0 ? todaySummary.mindMins : null} goal={goals.focusMinutes} unit="min" />
+      </ScrollView>
+
       <ScrollView style={gs.container} showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -853,7 +903,7 @@ export default function DashboardScreen() {
           <View style={[ss.ringGrid, { marginBottom: 12 }]}>
             {[
               { label: 'STEPS', value: todaySummary.steps.toLocaleString(), goal: '/ 8k', pct: todaySummary.steps / 8000, color: colors.str },
-              { label: 'WATER', value: `${(todaySummary.water / 1000).toFixed(1)}L`, goal: `/ ${(todaySummary.waterGoal / 1000).toFixed(1)}L`, pct: todaySummary.water / todaySummary.waterGoal, color: colors.foc },
+              { label: 'WATER', value: `${(todaySummary.water / 1000).toFixed(1)}L`, goal: `/ ${(goals.waterMl / 1000).toFixed(1)}L`, pct: todaySummary.water / goals.waterMl, color: colors.foc },
               { label: 'SLEEP', value: `${todaySummary.sleep ?? 0}h`, goal: '/ 7.5h', pct: (todaySummary.sleep ?? 0) / 7.5, color: colors.vit },
               { label: 'FOCUS', value: `${todaySummary.mindMins}m`, goal: '/ 90m', pct: todaySummary.mindMins / 90, color: colors.accent },
             ].map(r => (
