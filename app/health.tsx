@@ -13,9 +13,9 @@ import {
   saveData, loadData, appendToList, KEYS, toDay, generateId,
   SleepLog, WaterLog, WeightLog, FoodItem, NutritionLog, Macro,
 } from '../lib/storage';
+import { useGoals } from '../lib/useGoals';
 
 type HealthTab = 'sleep' | 'water' | 'weight' | 'nutrition';
-const WATER_GOAL_DEFAULT = 2500;
 
 export default function HealthScreen() {
   const { colors } = useTheme();
@@ -33,8 +33,8 @@ export default function HealthScreen() {
   const [activeTab, setActiveTab] = useState<HealthTab>('sleep');
   const [sleepHours, setSleepHours] = useState('');
   const [todaySleep, setTodaySleep] = useState<number | null>(null);
+  const { goals } = useGoals();
   const [waterToday, setWaterToday] = useState(0);
-  const [waterGoal, setWaterGoal] = useState(WATER_GOAL_DEFAULT);
   const [customMl, setCustomMl] = useState('');
   const fillAnim = useRef(new Animated.Value(0)).current;
   const [weightKg, setWeightKg] = useState('');
@@ -73,16 +73,15 @@ export default function HealthScreen() {
       setSleepHistory(logs.slice(-10).reverse());
     });
     loadTodayWater();
-    loadData<number>(KEYS.waterGoal, WATER_GOAL_DEFAULT).then(setWaterGoal);
     loadData<WeightLog[]>(KEYS.weightLogs, []).then(setWeightHistory);
     loadData<FoodItem[]>(KEYS.foodLibrary, []).then(setFoodLibrary);
     loadData<NutritionLog[]>(KEYS.nutritionLogs, []).then((logs) => setTodayNutrition(logs.filter((l) => l.date === today)));
   }, []);
 
   useEffect(() => {
-    const pct = Math.min((waterToday / waterGoal) * 100, 100);
+    const pct = Math.min((waterToday / goals.waterMl) * 100, 100);
     Animated.spring(fillAnim, { toValue: pct, useNativeDriver: false, tension: 40, friction: 8 }).start();
-  }, [waterToday, waterGoal]);
+  }, [waterToday, goals.waterMl]);
 
   const loadTodayWater = async () => {
     const logs = await loadData<WaterLog[]>(KEYS.waterLogs, []);
@@ -172,7 +171,7 @@ export default function HealthScreen() {
     setTodayNutrition(updated.filter((l) => l.date === today));
   };
 
-  const waterPct = Math.min((waterToday / waterGoal) * 100, 100);
+  const waterPct = Math.min((waterToday / goals.waterMl) * 100, 100);
   
   let periodWeights = weightHistory.slice(-(weightPeriod));
   if (periodWeights.length > 50) {
@@ -284,7 +283,7 @@ export default function HealthScreen() {
                   </View>
                   <View style={{ alignItems: 'flex-start' }}>
                     <Text style={[s.bigStat, { color: colors.foc, fontSize: 44 }]}>{waterToday} ml</Text>
-                    <Text style={[s.bigStatSub, { color: colors.textSub }]}>{waterPct.toFixed(0)}% of {waterGoal} ml</Text>
+                    <Text style={[s.bigStatSub, { color: colors.textSub }]}>{waterPct.toFixed(0)}% of {goals.waterMl} ml</Text>
                     {waterPct >= 100 && (
                       <View style={[gs.pill, { backgroundColor: colors.soc + '20', marginTop: 8 }]}>
                         <Text style={[gs.pillText, { color: colors.soc }]}>🎯 GOAL REACHED</Text>
@@ -373,17 +372,51 @@ export default function HealthScreen() {
                       </TouchableOpacity>
                     ))}
                   </View>
-                  {chartData && (
-                    <View style={[gs.card, { paddingHorizontal: 0, paddingVertical: 12, overflow: 'hidden' }]}>
-                      <LineChart
-                        data={chartData}
-                        width={Math.min(SCREEN_WIDTH - layout.hPadding * 2, layout.maxWidth - layout.hPadding * 2)}
-                        height={200}
-                        chartConfig={{ backgroundColor: colors.surface, backgroundGradientFrom: colors.surface, backgroundGradientTo: colors.surface, decimalPlaces: 1, color: (opacity = 1) => `rgba(34,197,94,${opacity})`, labelColor: () => colors.textSub, propsForDots: { r: '5', strokeWidth: '2', stroke: colors.soc }, propsForBackgroundLines: { stroke: colors.border } }}
-                        bezier style={{ borderRadius: 16 }} withInnerLines={false} withDots={periodWeights.length <= 14}
-                      />
-                    </View>
-                  )}
+                  {chartData && (() => {
+                    const chartW = Math.min(SCREEN_WIDTH - layout.hPadding * 2, layout.maxWidth - layout.hPadding * 2);
+                    const chartH = 200;
+                    const weights = periodWeights.map(w => w.kg);
+                    const minW = Math.min(...weights);
+                    const maxW = Math.max(...weights);
+                    const range = maxW - minW || 1;
+                    const targetY = goals.weightTargetKg !== null
+                      ? ((maxW - goals.weightTargetKg) / range) * (chartH - 40) + 10
+                      : null;
+                    return (
+                      <View style={[gs.card, { paddingHorizontal: 0, paddingVertical: 12, overflow: 'hidden' }]}>
+                        <View style={{ position: 'relative' }}>
+                          <LineChart
+                            data={chartData}
+                            width={chartW}
+                            height={chartH}
+                            chartConfig={{ backgroundColor: colors.surface, backgroundGradientFrom: colors.surface, backgroundGradientTo: colors.surface, decimalPlaces: 1, color: () => colors.soc, labelColor: () => colors.textMuted, propsForDots: { r: '3', strokeWidth: '1', stroke: colors.soc } }}
+                            bezier
+                            style={{ borderRadius: 8 }}
+                            withInnerLines={false}
+                            withOuterLines={false}
+                          />
+                          {targetY !== null && targetY > 0 && targetY < chartH && (
+                            <View
+                              style={{
+                                position: 'absolute',
+                                top: targetY,
+                                left: 0,
+                                right: 0,
+                                height: 1,
+                                borderTopWidth: 1,
+                                borderTopColor: colors.textMuted,
+                                borderStyle: 'dashed',
+                              }}
+                            >
+                              <Text style={{ position: 'absolute', right: 8, top: -14, fontSize: 10, color: colors.textMuted, fontWeight: '600' }}>
+                                Target
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })()}
                 </>
               )}
               {weightHistory.length > 0 && (
