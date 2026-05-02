@@ -636,10 +636,10 @@ export default function DashboardScreen() {
       <Text style={[gs.sectionTitle, { marginBottom: 14 }]}>RINGS</Text>
       <View style={ss.ringGrid}>
         {[
-          { label: 'STEPS', value: todaySummary.steps.toLocaleString(), goal: '/ 8k', pct: todaySummary.steps / 8000, color: colors.str },
-          { label: 'WATER', value: `${(todaySummary.water / 1000).toFixed(1)}L`, goal: `/ ${(goals.waterMl / 1000).toFixed(1)}L`, pct: todaySummary.water / goals.waterMl, color: colors.foc },
-          { label: 'SLEEP', value: `${todaySummary.sleep ?? 0}h`, goal: '/ 7.5h', pct: (todaySummary.sleep ?? 0) / 7.5, color: colors.vit },
-          { label: 'FOCUS', value: `${todaySummary.mindMins}m`, goal: '/ 90m', pct: todaySummary.mindMins / 90, color: colors.accent },
+          { label: 'STEPS', value: todaySummary.steps.toLocaleString(), goal: `/ ${Math.round(goals.steps / 1000)}k`, pct: goals.steps > 0 ? todaySummary.steps / goals.steps : 0, color: colors.str },
+          { label: 'WATER', value: `${(todaySummary.water / 1000).toFixed(1)}L`, goal: `/ ${(goals.waterMl / 1000).toFixed(1)}L`, pct: goals.waterMl > 0 ? todaySummary.water / goals.waterMl : 0, color: colors.foc },
+          { label: 'SLEEP', value: `${todaySummary.sleep ?? 0}h`, goal: `/ ${goals.sleepHours}h`, pct: goals.sleepHours > 0 ? (todaySummary.sleep ?? 0) / goals.sleepHours : 0, color: colors.vit },
+          { label: 'FOCUS', value: `${todaySummary.mindMins}m`, goal: `/ ${goals.focusMinutes}m`, pct: goals.focusMinutes > 0 ? todaySummary.mindMins / goals.focusMinutes : 0, color: colors.accent },
         ].map(r => (
           <RingCard key={r.label}
             label={r.label} value={r.value} goal={r.goal} pct={r.pct}
@@ -902,10 +902,10 @@ export default function DashboardScreen() {
         <View style={{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 16, alignSelf: 'center' }}>
           <View style={[ss.ringGrid, { marginBottom: 12 }]}>
             {[
-              { label: 'STEPS', value: todaySummary.steps.toLocaleString(), goal: '/ 8k', pct: todaySummary.steps / 8000, color: colors.str },
-              { label: 'WATER', value: `${(todaySummary.water / 1000).toFixed(1)}L`, goal: `/ ${(goals.waterMl / 1000).toFixed(1)}L`, pct: todaySummary.water / goals.waterMl, color: colors.foc },
-              { label: 'SLEEP', value: `${todaySummary.sleep ?? 0}h`, goal: '/ 7.5h', pct: (todaySummary.sleep ?? 0) / 7.5, color: colors.vit },
-              { label: 'FOCUS', value: `${todaySummary.mindMins}m`, goal: '/ 90m', pct: todaySummary.mindMins / 90, color: colors.accent },
+              { label: 'STEPS', value: todaySummary.steps.toLocaleString(), goal: `/ ${Math.round(goals.steps / 1000)}k`, pct: goals.steps > 0 ? todaySummary.steps / goals.steps : 0, color: colors.str },
+              { label: 'WATER', value: `${(todaySummary.water / 1000).toFixed(1)}L`, goal: `/ ${(goals.waterMl / 1000).toFixed(1)}L`, pct: goals.waterMl > 0 ? todaySummary.water / goals.waterMl : 0, color: colors.foc },
+              { label: 'SLEEP', value: `${todaySummary.sleep ?? 0}h`, goal: `/ ${goals.sleepHours}h`, pct: goals.sleepHours > 0 ? (todaySummary.sleep ?? 0) / goals.sleepHours : 0, color: colors.vit },
+              { label: 'FOCUS', value: `${todaySummary.mindMins}m`, goal: `/ ${goals.focusMinutes}m`, pct: goals.focusMinutes > 0 ? todaySummary.mindMins / goals.focusMinutes : 0, color: colors.accent },
             ].map(r => (
               <RingCard key={r.label}
                 label={r.label} value={r.value} goal={r.goal} pct={r.pct}

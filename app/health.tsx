@@ -79,7 +79,7 @@ export default function HealthScreen() {
   }, []);
 
   useEffect(() => {
-    const pct = Math.min((waterToday / goals.waterMl) * 100, 100);
+    const pct = goals.waterMl > 0 ? Math.min((waterToday / goals.waterMl) * 100, 100) : 0;
     Animated.spring(fillAnim, { toValue: pct, useNativeDriver: false, tension: 40, friction: 8 }).start();
   }, [waterToday, goals.waterMl]);
 
@@ -584,8 +584,8 @@ function MacroBar({ label, actual, target, color, unit }: {
           <Text style={{ color: pct >= 100 ? color : colors.textMuted }}>{pct.toFixed(0)}%</Text>
         </Text>
       </View>
-      <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.surfaceAlt, overflow: 'hidden' }}>
-        <View style={{ height: 6, borderRadius: 3, backgroundColor: color, width: `${Math.min(pct, 100)}%` }} />
+      <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.surfaceAlt }}>
+        <View style={{ height: 6, borderRadius: 3, backgroundColor: color, width: `${pct}%` }} />
       </View>
     </View>
   );

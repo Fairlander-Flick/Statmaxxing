@@ -5,9 +5,11 @@ import { loadData, saveData, KEYS, Goals, DEFAULT_GOALS } from './storage';
 async function migrateWaterGoal(current: Goals): Promise<Goals> {
   const raw = await AsyncStorage.getItem('health:waterGoal');
   if (raw === null) return current;
-  const parsed = parseInt(raw);
-  await AsyncStorage.removeItem('health:waterGoal');
-  if (!isNaN(parsed) && parsed > 0) return { ...current, waterMl: parsed };
+  const parsed = parseInt(raw, 10);
+  if (!isNaN(parsed) && parsed > 0) {
+    await AsyncStorage.removeItem('health:waterGoal');
+    return { ...current, waterMl: parsed };
+  }
   return current;
 }
 
@@ -28,9 +30,8 @@ export function useGoals(): {
   }, []);
 
   const setGoal = async <K extends keyof Goals>(key: K, value: Goals[K]) => {
-    const updated = { ...goals, [key]: value };
-    setGoals(updated);
-    await saveData(KEYS.goalsConfig, updated);
+    setGoals(prev => ({ ...prev, [key]: value }));
+    await saveData(KEYS.goalsConfig, { ...goals, [key]: value });
   };
 
   return { goals, setGoal };

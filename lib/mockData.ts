@@ -100,6 +100,4 @@ export async function generateRandomData(daysToGenerate: number = 7) {
   await saveData(KEYS.socialLogs, socialLogs);
   await saveData(KEYS.stepLogs, stepLogs);
 
-  // Set water goal for complete experience
-  await saveData(KEYS.waterGoal, 3000);
 }

@@ -103,12 +103,12 @@ export default function SettingsScreen() {
 
   const handleGoalSave = (key: 'steps' | 'waterMl' | 'focusMinutes' | 'calories' | 'proteinG' | 'carbsG' | 'fatG') => {
     const parsed = parseInt(goalInputs[key]);
-    if (!isNaN(parsed) && parsed > 0) setGoal(key, parsed);
+    if (!isNaN(parsed) && parsed >= 0) setGoal(key, parsed);
   };
 
   const handleGoalSaveFloat = (key: 'sleepHours') => {
     const parsed = parseFloat(goalInputs[key]);
-    if (!isNaN(parsed) && parsed > 0) setGoal(key, parsed);
+    if (!isNaN(parsed) && parsed >= 0) setGoal(key, parsed);
   };
 
   const handleWeightTargetSave = () => {
