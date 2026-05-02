@@ -15,6 +15,22 @@ const PERSON_TYPES: PersonType[] = ['Aile', 'Arkadaş', 'Hayvan', 'Diğer'];
 const TYPE_ICON: Record<PersonType, React.ComponentProps<typeof Ionicons>['name']> = {
   Aile: 'home-outline', Arkadaş: 'people-outline', Hayvan: 'paw-outline', Diğer: 'person-outline',
 };
+const TYPE_DISPLAY: Record<PersonType, string> = {
+  Aile: 'Family', Arkadaş: 'Friend', Hayvan: 'Pet', Diğer: 'Other',
+};
+
+function Avatar({ name, color }: { name: string; color: string }) {
+  const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  return (
+    <View style={{
+      width: 44, height: 44, borderRadius: 22,
+      backgroundColor: color + '22', alignItems: 'center', justifyContent: 'center',
+      borderWidth: 1, borderColor: color + '40',
+    }}>
+      <Text style={{ color, fontWeight: '600', fontSize: 15 }}>{initials}</Text>
+    </View>
+  );
+}
 
 export default function SocialScreen() {
   const { colors } = useTheme();
@@ -28,6 +44,7 @@ export default function SocialScreen() {
   const [activeView, setActiveView] = useState<'log' | 'people'>('log');
   const [people, setPeople] = useState<Person[]>([]);
   const [todayLogs, setTodayLogs] = useState<SocialLog[]>([]);
+  const [allSocialLogs, setAllSocialLogs] = useState<SocialLog[]>([]);
   const [personName, setPersonName] = useState('');
   const [personType, setPersonType] = useState<PersonType>('Arkadaş');
   const [closeness, setCloseness] = useState(5);
@@ -37,7 +54,10 @@ export default function SocialScreen() {
 
   useEffect(() => {
     loadData<Person[]>(KEYS.people, []).then(setPeople);
-    loadData<SocialLog[]>(KEYS.socialLogs, []).then((logs) => setTodayLogs(logs.filter((l) => l.date === today)));
+    loadData<SocialLog[]>(KEYS.socialLogs, []).then((logs) => {
+      setAllSocialLogs(logs);
+      setTodayLogs(logs.filter((l) => l.date === today));
+    });
   }, []);
 
   const addPerson = async () => {
@@ -60,6 +80,7 @@ export default function SocialScreen() {
     const person = people.find((p) => p.id === selectedPersonId);
     if (!person) return;
     const updated = await appendToList<SocialLog>(KEYS.socialLogs, { id: generateId(), date: today, personId: selectedPersonId, personName: person.name, minutes: mins });
+    setAllSocialLogs(updated);
     setTodayLogs(updated.filter((l) => l.date === today));
     setMinutes(''); setSelectedPersonId(null);
   };
@@ -68,11 +89,23 @@ export default function SocialScreen() {
     const all = await loadData<SocialLog[]>(KEYS.socialLogs, []);
     const updated = all.filter((l) => l.id !== id);
     await saveData(KEYS.socialLogs, updated);
+    setAllSocialLogs(updated);
     setTodayLogs(updated.filter((l) => l.date === today));
   };
 
   const totalMinutesToday = todayLogs.reduce((s, l) => s + l.minutes, 0);
   const fw = { alignSelf: 'center' as const, width: '100%' as const, maxWidth: layout.inputMaxWidth };
+
+  const getLastContact = (personId: string): string | null => {
+    const logs = allSocialLogs.filter((l) => l.personId === personId);
+    if (!logs.length) return null;
+    return logs.sort((a, b) => b.date.localeCompare(a.date))[0].date;
+  };
+
+  const getDaysSince = (dateStr: string | null): number | null => {
+    if (!dateStr) return null;
+    return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  };
   const contentStyle = { width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20 };
 
   return (
@@ -121,21 +154,33 @@ export default function SocialScreen() {
               ) : (
                 <>
                   <Text style={gs.sectionTitle}>Who did you spend time with?</Text>
-                  {people.map((p) => (
-                    <TouchableOpacity key={p.id}
-                      style={[gs.card, { flexDirection: 'row', alignItems: 'center', gap: 14 },
-                        selectedPersonId === p.id && { borderColor: colors.soc, borderWidth: 2 }]}
-                      onPress={() => setSelectedPersonId(selectedPersonId === p.id ? null : p.id)}>
-                      <View style={[s.personIcon, { backgroundColor: TYPE_COLOR[p.type] + '22' }]}>
-                        <Ionicons name={TYPE_ICON[p.type]} size={22} color={TYPE_COLOR[p.type]} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: colors.text, fontWeight: '700', fontSize: 17 }}>{p.name}</Text>
-                        <Text style={{ color: colors.textSub, fontSize: 14, marginTop: 2 }}>{p.type} · Closeness {p.closeness}/10</Text>
-                      </View>
-                      {selectedPersonId === p.id && <Ionicons name="checkmark-circle" size={26} color={colors.soc} />}
-                    </TouchableOpacity>
-                  ))}
+                  {people.map((p) => {
+                    const typeColor = TYPE_COLOR[p.type];
+                    const daysSince = getDaysSince(getLastContact(p.id));
+                    const isDrifting = daysSince === null || daysSince > 7;
+                    return (
+                      <TouchableOpacity key={p.id}
+                        style={[gs.card, { flexDirection: 'row', alignItems: 'center', gap: 14 },
+                          selectedPersonId === p.id && { borderColor: colors.soc, borderWidth: 2 }]}
+                        onPress={() => setSelectedPersonId(selectedPersonId === p.id ? null : p.id)}>
+                        <Avatar name={p.name} color={typeColor} />
+                        <View style={{ flex: 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 16 }}>{p.name}</Text>
+                            {isDrifting && (
+                              <View style={{ backgroundColor: colors.orangeDim, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                                <Text style={{ fontSize: 9, color: colors.orange, fontWeight: '600', letterSpacing: 0.4 }}>DRIFT</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
+                            {TYPE_DISPLAY[p.type]}{daysSince !== null ? ` · ${daysSince}d ago` : ' · never logged'}
+                          </Text>
+                        </View>
+                        {selectedPersonId === p.id && <Ionicons name="checkmark-circle" size={26} color={colors.soc} />}
+                      </TouchableOpacity>
+                    );
+                  })}
 
                   {selectedPersonId && (
                     <View style={gs.card}>
@@ -188,7 +233,7 @@ export default function SocialScreen() {
                           personType === t && { backgroundColor: TYPE_COLOR[t] + '22', borderColor: TYPE_COLOR[t] }]}
                         onPress={() => setPersonType(t)}>
                         <Ionicons name={TYPE_ICON[t]} size={16} color={personType === t ? TYPE_COLOR[t] : colors.textSub} />
-                        <Text style={[{ fontSize: 14, fontWeight: '600', color: personType === t ? TYPE_COLOR[t] : colors.textSub }]}>{t}</Text>
+                        <Text style={[{ fontSize: 14, fontWeight: '600', color: personType === t ? TYPE_COLOR[t] : colors.textSub }]}>{TYPE_DISPLAY[t]}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -212,20 +257,32 @@ export default function SocialScreen() {
               {people.length > 0 && (
                 <>
                   <Text style={gs.sectionTitle}>Your People ({people.length})</Text>
-                  {people.map((p) => (
-                    <View key={p.id} style={[gs.card, { flexDirection: 'row', alignItems: 'center', gap: 14 }]}>
-                      <View style={[s.personIcon, { backgroundColor: TYPE_COLOR[p.type] + '22' }]}>
-                        <Ionicons name={TYPE_ICON[p.type]} size={22} color={TYPE_COLOR[p.type]} />
+                  {people.map((p) => {
+                    const typeColor = TYPE_COLOR[p.type];
+                    const daysSince = getDaysSince(getLastContact(p.id));
+                    const isDrifting = daysSince === null || daysSince > 7;
+                    return (
+                      <View key={p.id} style={[gs.card, { flexDirection: 'row', alignItems: 'center', gap: 14 }]}>
+                        <Avatar name={p.name} color={typeColor} />
+                        <View style={{ flex: 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 16 }}>{p.name}</Text>
+                            {isDrifting && (
+                              <View style={{ backgroundColor: colors.orangeDim, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                                <Text style={{ fontSize: 9, color: colors.orange, fontWeight: '600', letterSpacing: 0.4 }}>DRIFT</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
+                            {TYPE_DISPLAY[p.type]} · {p.closeness}/10{daysSince !== null ? ` · ${daysSince}d ago` : ''}
+                          </Text>
+                        </View>
+                        <TouchableOpacity style={[s.iconBtn, { backgroundColor: colors.redDim }]} onPress={() => deletePerson(p.id)}>
+                          <Ionicons name="trash-outline" size={18} color={colors.red} />
+                        </TouchableOpacity>
                       </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: colors.text, fontWeight: '700', fontSize: 17 }}>{p.name}</Text>
-                        <Text style={{ color: colors.textSub, fontSize: 14, marginTop: 2 }}>{p.type} · Closeness {p.closeness}/10</Text>
-                      </View>
-                      <TouchableOpacity style={[s.iconBtn, { backgroundColor: colors.redDim }]} onPress={() => deletePerson(p.id)}>
-                        <Ionicons name="trash-outline" size={18} color={colors.red} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </>
               )}
             </>

@@ -3,7 +3,7 @@ import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ThemeProvider, useTheme } from '../lib/ThemeContext';
+import { ThemeProvider } from '../lib/ThemeContext';
 
 type TabIconProps = {
   name: React.ComponentProps<typeof Ionicons>['name'];
@@ -20,8 +20,6 @@ function TabIcon({ name, nameFilled, color, focused }: TabIconProps) {
         justifyContent: 'center',
         width: 40,
         height: 28,
-        borderRadius: 14,
-        backgroundColor: focused ? color + '22' : 'transparent',
       }}
     >
       <Ionicons
@@ -34,14 +32,12 @@ function TabIcon({ name, nameFilled, color, focused }: TabIconProps) {
 }
 
 function AppTabs() {
-  const { colors } = useTheme();
-
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#13131b',
+          backgroundColor: '#1e1a17',
           borderTopColor: 'rgba(255,255,255,0.06)',
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 84 : 64,
@@ -50,12 +46,12 @@ function AppTabs() {
           elevation: 0,
           shadowOpacity: 0,
         },
-        tabBarActiveTintColor: '#6366F1',
-        tabBarInactiveTintColor: '#6b7280',
+        tabBarActiveTintColor: '#c2827a',
+        tabBarInactiveTintColor: 'rgba(232,224,214,0.35)',
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: '600',
-          letterSpacing: 0.2,
+          fontWeight: '500',
+          letterSpacing: 0.04,
           marginTop: 0,
         },
       }}
@@ -63,7 +59,7 @@ function AppTabs() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Today',
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               name="home-outline"
@@ -119,7 +115,7 @@ function AppTabs() {
       <Tabs.Screen
         name="social"
         options={{
-          title: 'Social',
+          title: 'People',
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               name="chatbubbles-outline"

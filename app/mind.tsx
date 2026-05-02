@@ -3,7 +3,7 @@ import {
   ScrollView, Text, View, StyleSheet, TouchableOpacity, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme, makeGlobalStyles } from '../lib/ThemeContext';
 import { useLayout } from '../lib/useLayout';
@@ -26,6 +26,7 @@ const DEFAULT_ACTIVITIES: MindActivity[] = [
 function TimerRing({ progress, elapsed, isRunning, color }: {
   progress: number; elapsed: string; isRunning: boolean; color: string;
 }) {
+  const { colors } = useTheme();
   const size = 192;
   const cx = size / 2;
   const cy = size / 2;
@@ -36,18 +37,10 @@ function TimerRing({ progress, elapsed, isRunning, color }: {
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={{ position: 'absolute' }}>
-        <Defs>
-          <LinearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <Stop offset="0%" stopColor="#6366F1" />
-            <Stop offset="100%" stopColor="#818CF8" />
-          </LinearGradient>
-        </Defs>
-        {/* Track */}
-        <Circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={8} />
-        {/* Progress */}
+        <Circle cx={cx} cy={cy} r={r} fill="none" stroke={colors.border} strokeWidth={8} />
         <Circle
           cx={cx} cy={cy} r={r} fill="none"
-          stroke="url(#timerGrad)"
+          stroke={color}
           strokeWidth={8}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
@@ -57,8 +50,8 @@ function TimerRing({ progress, elapsed, isRunning, color }: {
         />
       </Svg>
       <View style={{ alignItems: 'center' }}>
-        <Text style={[s.timerDisplay, { color: '#e4e1ed' }]}>{elapsed}</Text>
-        <Text style={[s.timerLabel, { color: 'rgba(199,196,215,0.7)' }]}>
+        <Text style={[s.timerDisplay, { color: colors.text }]}>{elapsed}</Text>
+        <Text style={[s.timerLabel, { color: colors.textMuted }]}>
           {isRunning ? 'RUNNING' : 'PAUSED'}
         </Text>
       </View>
@@ -211,9 +204,6 @@ export default function MindScreen() {
                     <Ionicons name={actIcon} size={14} color={statCol} />
                   </View>
                   <Text style={[s.activityText, { color: isActive ? statCol : colors.text }]}>{a.name}</Text>
-                  <View style={[s.statBadge, { backgroundColor: statCol + '25' }]}>
-                    <Text style={{ fontSize: 9, color: statCol, fontWeight: '800', letterSpacing: 0.5 }}>+{a.statBoost}</Text>
-                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -228,7 +218,7 @@ export default function MindScreen() {
               <View style={[s.activityBadge, { backgroundColor: accentColor + '20', borderColor: accentColor + '40' }]}>
                 <Ionicons name={ACT_ICONS[selectedActivity.name] ?? 'star'} size={12} color={accentColor} />
                 <Text style={[s.activityBadgeText, { color: accentColor }]}>
-                  {selectedActivity.name} · +{selectedActivity.statBoost}
+                  {selectedActivity.name}
                 </Text>
               </View>
             ) : (
@@ -317,12 +307,9 @@ export default function MindScreen() {
                       <View style={{ flex: 1 }}>
                         <Text style={[s.sessionName, { color: colors.text }]}>{l.activityName}</Text>
                         <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-                          <View style={[s.sessionTag, { backgroundColor: col + '18', borderColor: col + '30' }]}>
-                            <Text style={{ fontSize: 9, color: col, fontWeight: '800', letterSpacing: 0.5 }}>+{l.statBoost}</Text>
-                          </View>
                           <View style={[s.sessionTag, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
                             <Text style={{ fontSize: 9, color: colors.textMuted, fontWeight: '600' }}>
-                              ⭐ {l.feelingScore}/10
+                              {l.feelingScore}/10
                             </Text>
                           </View>
                         </View>
@@ -350,7 +337,7 @@ export default function MindScreen() {
               value={newActivityName}
               onChangeText={setNewActivityName}
             />
-            <Text style={[gs.label, { marginBottom: 8 }]}>Stat Boost</Text>
+            <Text style={[gs.label, { marginBottom: 8 }]}>Category</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
               {STAT_OPTS.map((st) => {
                 const stCol = STAT_COLOR[st];
