@@ -47,6 +47,14 @@ export const KEYS = {
   // Social
   people: 'social:people',
   socialLogs: 'social:logs',
+
+  // Settings / gamification
+  statLevels:   'settings:statLevels',
+  weeklyGoals:  'settings:weeklyGoals',
+  weeklyStreak: 'settings:weeklyStreak',
+
+  // Journal
+  dailyNotes: 'mind:notes',
 };
 
 // Type definitions
@@ -193,6 +201,32 @@ export type Goals = {
   fatG: number;
 };
 
+export type StatKey = 'vit' | 'str' | 'foc' | 'soc' | 'dis';
+
+export type StatLevel = { level: number; xp: number };
+export type StatLevels = Record<StatKey, StatLevel>;
+
+export type WeeklyGoals = {
+  focusMinutes: number;
+  gymSessions: number;
+  waterMlTotal: number;
+  caloriesTotal: number;
+  stepsTotal: number;
+};
+
+export type WeeklyStreakState = {
+  current: number;
+  best: number;
+  lastCheckedWeek: string; // ISO week string e.g. "2026-W18"
+};
+
+export type DailyNote = {
+  id: string;
+  date: string;  // YYYY-MM-DD
+  text: string;
+  mood: number;  // 1–10
+};
+
 export const DEFAULT_GOALS: Goals = {
   steps: 8000,
   sleepHours: 7.5,
@@ -203,6 +237,22 @@ export const DEFAULT_GOALS: Goals = {
   proteinG: 150,
   carbsG: 300,
   fatG: 70,
+};
+
+export const DEFAULT_STAT_LEVELS: StatLevels = {
+  vit: { level: 1, xp: 0 },
+  str: { level: 1, xp: 0 },
+  foc: { level: 1, xp: 0 },
+  soc: { level: 1, xp: 0 },
+  dis: { level: 1, xp: 0 },
+};
+
+export const DEFAULT_WEEKLY_GOALS: WeeklyGoals = {
+  focusMinutes: 300,
+  gymSessions: 3,
+  waterMlTotal: 17500,
+  caloriesTotal: 14000,
+  stepsTotal: 56000,
 };
 
 // Utility: today's ISO date string
