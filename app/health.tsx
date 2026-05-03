@@ -375,12 +375,14 @@ export default function HealthScreen() {
                   {chartData && (() => {
                     const chartW = Math.min(SCREEN_WIDTH - layout.hPadding * 2, layout.maxWidth - layout.hPadding * 2);
                     const chartH = 200;
+                    const CHART_TOP_PAD = 10;
+                    const CHART_BOTTOM_PAD = 40;
                     const weights = periodWeights.map(w => w.kg);
                     const minW = Math.min(...weights);
                     const maxW = Math.max(...weights);
                     const range = maxW - minW || 1;
                     const targetY = goals.weightTargetKg !== null
-                      ? ((maxW - goals.weightTargetKg) / range) * (chartH - 40) + 10
+                      ? ((maxW - goals.weightTargetKg) / range) * (chartH - CHART_BOTTOM_PAD) + CHART_TOP_PAD
                       : null;
                     return (
                       <View style={[gs.card, { paddingHorizontal: 0, paddingVertical: 12, overflow: 'hidden' }]}>
