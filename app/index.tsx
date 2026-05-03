@@ -12,8 +12,9 @@ import {
   loadData, KEYS, toDay,
   SleepLog, WaterLog, WeightLog, WorkoutLog, MindLog, SocialLog, NutritionLog, StepLog,
   StatLevels, DEFAULT_STAT_LEVELS, Goals,
-  WeeklyStreakState, WeeklyGoals, DEFAULT_WEEKLY_GOALS,
+  WeeklyStreakState, WeeklyGoals, DEFAULT_WEEKLY_GOALS, DailyNote,
 } from '../lib/storage';
+import StreakCalendar, { DayData } from '../components/StreakCalendar';
 import { useGoals } from '../lib/useGoals';
 import PentagonChart, { PentagonStats } from '../components/PentagonChart';
 import { xpProgress, xpToNextLevel } from '../lib/xp';
@@ -460,6 +461,8 @@ export default function DashboardScreen() {
   const [weeklyStreak, setWeeklyStreak] = useState<WeeklyStreakState>({ current: 0, best: 0, lastCheckedWeek: '' });
   const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoals>(DEFAULT_WEEKLY_GOALS);
   const [weekProgress, setWeekProgress] = useState<WeeklyProgress>({ focusMinutes: 0, gymSessions: 0, waterMlTotal: 0, caloriesTotal: 0, stepsTotal: 0 });
+  const [calendarDays, setCalendarDays] = useState<DayData[]>([]);
+  const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([]);
 
   // Per-graph data
   const [caloriesData, setCaloriesData] = useState<DayPoint[]>([]);
@@ -606,6 +609,34 @@ export default function DashboardScreen() {
       date,
       value: socialLogs.filter(l => l.date === date).reduce((s, l) => s + l.minutes, 0),
     })));
+
+    const notes = await loadData<DailyNote[]>(KEYS.dailyNotes, []);
+    setDailyNotes(notes);
+
+    const last90 = Array.from({ length: 90 }, (_, i) => getDateBefore(89 - i));
+    const calDays: DayData[] = last90.map(date => {
+      const dSleep = sleepLogs.find(l => l.date === date)?.hours ?? null;
+      const dWater = waterLogs.find(l => l.date === date)?.totalMl ?? 0;
+      const dSteps = stepLogs.find(l => l.date === date)?.steps ?? 0;
+      const dWork  = workoutLogs.some(l => l.date === date);
+      const dFocus = mindLogs.filter(l => l.date === date).reduce((s, l) => s + l.durationMinutes, 0);
+
+      let goalsHit = 0;
+      if (dSleep !== null && dSleep >= goals.sleepHours) goalsHit++;
+      if (dWater >= goals.waterMl) goalsHit++;
+      if (dSteps >= goals.steps) goalsHit++;
+      if (dWork) goalsHit++;
+      if (dFocus >= goals.focusMinutes) goalsHit++;
+
+      return {
+        date, goalsHit, totalGoals: 5,
+        note: notes.find(n => n.date === date),
+        sleepHours: dSleep,
+        steps: dSteps,
+        focusMins: dFocus,
+      };
+    });
+    setCalendarDays(calDays);
   }, [today, selectedWeekIndex]);
 
   useEffect(() => { computeStats(); }, [computeStats]);
@@ -745,6 +776,23 @@ export default function DashboardScreen() {
             </View>
           );
         })}
+      </View>
+    </View>
+  );
+
+  const calendarCard = (
+    <View style={gs.card}>
+      <Text style={[gs.sectionTitle, { marginBottom: 12 }]}>HISTORY · 90D</Text>
+      <StreakCalendar days={calendarDays} />
+      <View style={{ flexDirection: 'row', gap: 6, marginTop: 10, alignItems: 'center' }}>
+        <Text style={{ fontSize: 10, color: colors.textMuted }}>less</Text>
+        {[0, 0.3, 0.6, 0.9, 1].map((r, i) => (
+          <View key={i} style={{
+            width: 10, height: 10, borderRadius: 2,
+            backgroundColor: r === 0 ? colors.surfaceAlt : colors.dis + Math.round(r * 255).toString(16).padStart(2, '0'),
+          }} />
+        ))}
+        <Text style={{ fontSize: 10, color: colors.textMuted }}>more</Text>
       </View>
     </View>
   );
@@ -950,6 +998,7 @@ export default function DashboardScreen() {
 
           {/* Bottom row */}
           <View style={{ gap: 12, marginTop: 20 }}>
+            {calendarCard}
             {heatmapCard}
             {weeklyCard}
           </View>
@@ -1020,6 +1069,7 @@ export default function DashboardScreen() {
           </View>
           {GRAPH_DEFS.filter(g => selectedGraphs.includes(g.id)).map(g => renderGraphCard(g.id))}
           {todayLog}
+          {calendarCard}
           {heatmapCard}
           {weeklyCard}
         </View>
