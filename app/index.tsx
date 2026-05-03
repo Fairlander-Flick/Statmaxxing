@@ -9,15 +9,16 @@ import Svg, { Path, Defs, LinearGradient, Stop, Line, Circle, Rect } from 'react
 import { useTheme, makeGlobalStyles, ThemeColors } from '../lib/ThemeContext';
 import { useLayout } from '../lib/useLayout';
 import {
-  loadData, saveData, KEYS, toDay, generateId,
+  loadData, saveData, appendToList, KEYS, toDay, generateId,
   SleepLog, WaterLog, WeightLog, WorkoutLog, MindLog, SocialLog, NutritionLog, StepLog,
   StatLevels, DEFAULT_STAT_LEVELS, Goals,
   WeeklyStreakState, WeeklyGoals, DEFAULT_WEEKLY_GOALS, DailyNote,
 } from '../lib/storage';
+import QuickLogModal from '../components/QuickLogModal';
 import StreakCalendar, { DayData } from '../components/StreakCalendar';
 import { useGoals } from '../lib/useGoals';
 import PentagonChart, { PentagonStats } from '../components/PentagonChart';
-import { xpProgress, xpToNextLevel } from '../lib/xp';
+import { xpProgress, xpToNextLevel, awardXP } from '../lib/xp';
 import { refreshWeeklyStreak, computeThisWeekProgress, WeeklyProgress } from '../lib/weeklyStats';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -466,6 +467,7 @@ export default function DashboardScreen() {
   const [noteText, setNoteText] = useState('');
   const [noteMood, setNoteMood] = useState(7);
   const [noteSaved, setNoteSaved] = useState(false);
+  const [quickLogModal, setQuickLogModal] = useState<'water' | 'sleep' | 'steps' | null>(null);
 
   // Per-graph data
   const [caloriesData, setCaloriesData] = useState<DayPoint[]>([]);
@@ -650,6 +652,32 @@ export default function DashboardScreen() {
     await computeStats();
     setRefreshing(false);
   }, [computeStats]);
+
+  const quickLogWater = async (ml: number) => {
+    const logs = await loadData<WaterLog[]>(KEYS.waterLogs, []);
+    const existing = logs.find(l => l.date === today);
+    if (existing) {
+      await saveData(KEYS.waterLogs, logs.map(l => l.date === today ? { ...l, totalMl: l.totalMl + ml } : l));
+    } else {
+      await appendToList<WaterLog>(KEYS.waterLogs, { id: generateId(), date: today, totalMl: ml });
+    }
+    await awardXP('vit', 5);
+    await computeStats();
+  };
+
+  const quickLogSleep = async (hours: number) => {
+    const logs = await loadData<SleepLog[]>(KEYS.sleepLogs, []);
+    await saveData(KEYS.sleepLogs, [...logs.filter(l => l.date !== today), { id: generateId(), date: today, hours }]);
+    await awardXP('vit', 10);
+    await computeStats();
+  };
+
+  const quickLogSteps = async (steps: number) => {
+    const logs = await loadData<StepLog[]>(KEYS.stepLogs, []);
+    await saveData(KEYS.stepLogs, [...logs.filter(l => l.date !== today), { id: generateId(), date: today, steps }]);
+    await awardXP('str', 15);
+    await computeStats();
+  };
 
   const saveDailyNote = async () => {
     if (!noteText.trim()) return;
@@ -1022,9 +1050,15 @@ export default function DashboardScreen() {
 
         {/* Today Goal Chips — web */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 28, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <TodayChip icon="footsteps-outline" color={colors.str} actual={todaySummary.steps > 0 ? todaySummary.steps : null} goal={goals.steps} unit="steps" />
-          <TodayChip icon="water-outline" color={colors.vit} actual={todaySummary.water > 0 ? todaySummary.water : null} goal={goals.waterMl} unit="ml" />
-          <TodayChip icon="moon-outline" color={colors.art} actual={todaySummary.sleep} goal={goals.sleepHours} unit="h" />
+          <TouchableOpacity onPress={() => setQuickLogModal('steps')}>
+            <TodayChip icon="footsteps-outline" color={colors.str} actual={todaySummary.steps > 0 ? todaySummary.steps : null} goal={goals.steps} unit="steps" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setQuickLogModal('water')}>
+            <TodayChip icon="water-outline" color={colors.vit} actual={todaySummary.water > 0 ? todaySummary.water : null} goal={goals.waterMl} unit="ml" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setQuickLogModal('sleep')}>
+            <TodayChip icon="moon-outline" color={colors.art} actual={todaySummary.sleep} goal={goals.sleepHours} unit="h" />
+          </TouchableOpacity>
           <TodayChip icon="timer-outline" color={colors.foc} actual={todaySummary.mindMins > 0 ? todaySummary.mindMins : null} goal={goals.focusMinutes} unit="min" />
         </View>
 
@@ -1062,6 +1096,9 @@ export default function DashboardScreen() {
             {weeklyCard}
           </View>
         </ScrollView>
+      <QuickLogModal visible={quickLogModal === 'water'} title="Log Water" unit="ml" presets={[250, 500, 750]} onSave={quickLogWater} onClose={() => setQuickLogModal(null)} />
+      <QuickLogModal visible={quickLogModal === 'sleep'} title="Log Sleep" unit="hours" onSave={quickLogSleep} onClose={() => setQuickLogModal(null)} />
+      <QuickLogModal visible={quickLogModal === 'steps'} title="Log Steps" unit="steps" onSave={quickLogSteps} onClose={() => setQuickLogModal(null)} />
       </View>
     );
   }
@@ -1094,9 +1131,15 @@ export default function DashboardScreen() {
         contentContainerStyle={{ flexDirection: 'row', gap: 8, paddingHorizontal: layout.hPadding, paddingVertical: 10 }}
         style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
       >
-        <TodayChip icon="footsteps-outline" color={colors.str} actual={todaySummary.steps > 0 ? todaySummary.steps : null} goal={goals.steps} unit="steps" />
-        <TodayChip icon="water-outline" color={colors.vit} actual={todaySummary.water > 0 ? todaySummary.water : null} goal={goals.waterMl} unit="ml" />
-        <TodayChip icon="moon-outline" color={colors.art} actual={todaySummary.sleep} goal={goals.sleepHours} unit="h" />
+        <TouchableOpacity onPress={() => setQuickLogModal('steps')}>
+          <TodayChip icon="footsteps-outline" color={colors.str} actual={todaySummary.steps > 0 ? todaySummary.steps : null} goal={goals.steps} unit="steps" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setQuickLogModal('water')}>
+          <TodayChip icon="water-outline" color={colors.vit} actual={todaySummary.water > 0 ? todaySummary.water : null} goal={goals.waterMl} unit="ml" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setQuickLogModal('sleep')}>
+          <TodayChip icon="moon-outline" color={colors.art} actual={todaySummary.sleep} goal={goals.sleepHours} unit="h" />
+        </TouchableOpacity>
         <TodayChip icon="timer-outline" color={colors.foc} actual={todaySummary.mindMins > 0 ? todaySummary.mindMins : null} goal={goals.focusMinutes} unit="min" />
       </ScrollView>
 
@@ -1134,6 +1177,10 @@ export default function DashboardScreen() {
           {weeklyCard}
         </View>
       </ScrollView>
+
+      <QuickLogModal visible={quickLogModal === 'water'} title="Log Water" unit="ml" presets={[250, 500, 750]} onSave={quickLogWater} onClose={() => setQuickLogModal(null)} />
+      <QuickLogModal visible={quickLogModal === 'sleep'} title="Log Sleep" unit="hours" onSave={quickLogSleep} onClose={() => setQuickLogModal(null)} />
+      <QuickLogModal visible={quickLogModal === 'steps'} title="Log Steps" unit="steps" onSave={quickLogSteps} onClose={() => setQuickLogModal(null)} />
     </SafeAreaView>
   );
 }
