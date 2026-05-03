@@ -42,6 +42,7 @@ export const KEYS = {
   // Mind
   mindActivities: 'mind:activities',
   mindLogs: 'mind:logs',
+  focusTasks: 'mind:tasks',
 
   // Social
   people: 'social:people',
@@ -136,6 +137,13 @@ export type WorkoutLog = {
   sets: SetLog[];
   rpe: number; // 1-10 (10=easiest, 1=hardest)
   avgDifficulty: number;
+};
+
+export type FocusTask = {
+  id: string;
+  text: string;
+  done: boolean;
+  createdAt: string; // ISO date YYYY-MM-DD
 };
 
 // Mind types

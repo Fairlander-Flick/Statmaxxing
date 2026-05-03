@@ -9,14 +9,14 @@ import { useTheme, makeGlobalStyles } from '../lib/ThemeContext';
 import { useLayout } from '../lib/useLayout';
 import {
   saveData, loadData, appendToList, KEYS, toDay, generateId,
-  MindActivity, MindLog,
+  MindActivity, MindLog, FocusTask,
 } from '../lib/storage';
 
 const DEFAULT_ACTIVITIES: MindActivity[] = [
   { id: '1', name: 'Coding', statBoost: 'FOC' },
   { id: '2', name: 'Reading', statBoost: 'FOC' },
-  { id: '3', name: 'Drawing', statBoost: 'ART' },
-  { id: '4', name: 'Music', statBoost: 'ART' },
+  { id: '3', name: 'Drawing', statBoost: 'FOC' },
+  { id: '4', name: 'Music', statBoost: 'FOC' },
   { id: '5', name: 'Deep Work', statBoost: 'DIS' },
   { id: '6', name: 'Studying', statBoost: 'FOC' },
   { id: '7', name: 'Meditation', statBoost: 'VIT' },
@@ -27,10 +27,10 @@ function TimerRing({ progress, elapsed, isRunning, color }: {
   progress: number; elapsed: string; isRunning: boolean; color: string;
 }) {
   const { colors } = useTheme();
-  const size = 192;
+  const size = 224;
   const cx = size / 2;
   const cy = size / 2;
-  const r = 80;
+  const r = 96;
   const circumference = 2 * Math.PI * r;
   const offset = circumference * (1 - Math.min(progress, 1));
 
@@ -65,11 +65,11 @@ export default function MindScreen() {
   const gs = makeGlobalStyles(colors);
 
   const STAT_COLOR: Record<string, string> = {
-    FOC: colors.foc, ART: colors.art, DIS: colors.dis, VIT: colors.vit, SOC: colors.soc, STR: colors.str,
+    FOC: colors.foc, DIS: colors.dis, VIT: colors.vit, SOC: colors.soc, STR: colors.str,
   };
-  const STAT_OPTS = ['FOC', 'ART', 'DIS', 'VIT', 'SOC', 'STR'];
+  const STAT_OPTS = ['FOC', 'DIS', 'VIT', 'SOC', 'STR'];
   const STAT_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
-    FOC: 'flash', ART: 'color-palette', DIS: 'calendar', VIT: 'heart', SOC: 'people', STR: 'barbell',
+    FOC: 'flash', DIS: 'calendar', VIT: 'heart', SOC: 'people', STR: 'barbell',
   };
   const ACT_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
     Coding: 'code-slash', Reading: 'book', Drawing: 'pencil', Music: 'musical-notes',
@@ -78,6 +78,9 @@ export default function MindScreen() {
 
   const [activities, setActivities] = useState<MindActivity[]>(DEFAULT_ACTIVITIES);
   const [todayLogs, setTodayLogs] = useState<MindLog[]>([]);
+  const [tasks, setTasks] = useState<FocusTask[]>([]);
+  const [newTaskText, setNewTaskText] = useState('');
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<MindActivity | null>(null);
   const [feeling, setFeeling] = useState(7);
   const [newActivityName, setNewActivityName] = useState('');
@@ -100,8 +103,11 @@ export default function MindScreen() {
   const today = toDay();
 
   useEffect(() => {
-    loadData<MindActivity[]>(KEYS.mindActivities, DEFAULT_ACTIVITIES).then(setActivities);
+    loadData<MindActivity[]>(KEYS.mindActivities, DEFAULT_ACTIVITIES).then((acts) =>
+      setActivities(acts.map(a => a.statBoost === 'ART' ? { ...a, statBoost: 'FOC' } : a))
+    );
     loadData<MindLog[]>(KEYS.mindLogs, []).then((logs) => setTodayLogs(logs.filter((l) => l.date === today)));
+    loadData<FocusTask[]>(KEYS.focusTasks, []).then(setTasks);
   }, []);
 
   useEffect(() => { entryModeRef.current = entryMode; }, [entryMode]);
@@ -179,6 +185,35 @@ export default function MindScreen() {
     if (entryMode === 'pomodoro') resetPomodoro(); else resetTimer();
   };
 
+  const addTask = async () => {
+    if (!newTaskText.trim()) return;
+    const task: FocusTask = { id: generateId(), text: newTaskText.trim(), done: false, createdAt: today };
+    const updated = [...tasks, task];
+    await saveData(KEYS.focusTasks, updated);
+    setTasks(updated);
+    setNewTaskText('');
+  };
+
+  const toggleTask = async (id: string) => {
+    const updated = tasks.map((t) => t.id === id ? { ...t, done: !t.done } : t);
+    await saveData(KEYS.focusTasks, updated);
+    setTasks(updated);
+    if (activeTaskId === id) setActiveTaskId(null);
+  };
+
+  const deleteTask = async (id: string) => {
+    const updated = tasks.filter((t) => t.id !== id);
+    await saveData(KEYS.focusTasks, updated);
+    setTasks(updated);
+    if (activeTaskId === id) setActiveTaskId(null);
+  };
+
+  const clearDoneTasks = async () => {
+    const updated = tasks.filter((t) => !t.done);
+    await saveData(KEYS.focusTasks, updated);
+    setTasks(updated);
+  };
+
   const addActivity = async () => {
     if (!newActivityName.trim()) return;
     const act: MindActivity = { id: generateId(), name: newActivityName.trim(), statBoost: newActivityStat };
@@ -205,6 +240,9 @@ export default function MindScreen() {
 
   const totalTodayMins = todayLogs.reduce((s, l) => s + l.durationMinutes, 0);
   const accentColor = selectedActivity ? (STAT_COLOR[selectedActivity.statBoost] ?? colors.accent) : colors.accent;
+  const activeTask = tasks.find((t) => t.id === activeTaskId) ?? null;
+  const pendingTasks = tasks.filter((t) => !t.done);
+  const doneTasks = tasks.filter((t) => t.done);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -238,6 +276,120 @@ export default function MindScreen() {
                 {todayLogs.length} session{todayLogs.length !== 1 ? 's' : ''} logged
               </Text>
             )}
+          </View>
+
+          {/* ── Task List ── */}
+          <View style={[gs.card, { marginTop: 20, padding: 0, overflow: 'hidden' }]}>
+            {/* Card header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="checkbox-outline" size={16} color={colors.foc} />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text, letterSpacing: -0.2 }}>Tasks</Text>
+                {pendingTasks.length > 0 && (
+                  <View style={{ backgroundColor: colors.foc + '20', borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: colors.foc }}>{pendingTasks.length}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', gap: 14 }}>
+                {doneTasks.length > 0 && (
+                  <TouchableOpacity onPress={clearDoneTasks}>
+                    <Text style={{ fontSize: 12, color: colors.textMuted }}>Clear done</Text>
+                  </TouchableOpacity>
+                )}
+                {tasks.length > 0 && (
+                  <TouchableOpacity onPress={async () => {
+                    await saveData(KEYS.focusTasks, []);
+                    setTasks([]);
+                    setActiveTaskId(null);
+                  }}>
+                    <Text style={{ fontSize: 12, color: colors.red }}>Clear all</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Task rows */}
+            {tasks.length === 0 && (
+              <View style={{ paddingHorizontal: 16, paddingVertical: 18, alignItems: 'center' }}>
+                <Text style={{ fontSize: 13, color: colors.textMuted, fontStyle: 'italic' }}>No tasks yet. Add what you'll work on today.</Text>
+              </View>
+            )}
+            {tasks.map((task) => {
+              const isActive = activeTaskId === task.id;
+              return (
+                <TouchableOpacity
+                  key={task.id}
+                  onPress={() => !task.done && setActiveTaskId(isActive ? null : task.id)}
+                  activeOpacity={task.done ? 1 : 0.7}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 12,
+                    paddingHorizontal: 16, paddingVertical: 13,
+                    borderBottomWidth: 1, borderBottomColor: colors.border,
+                    backgroundColor: isActive ? colors.foc + '0d' : 'transparent',
+                  }}
+                >
+                  {/* Checkbox */}
+                  <TouchableOpacity onPress={() => toggleTask(task.id)} hitSlop={8}>
+                    <Ionicons
+                      name={task.done ? 'checkmark-circle' : 'ellipse-outline'}
+                      size={20}
+                      color={task.done ? colors.foc : colors.border}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Text */}
+                  <Text style={{
+                    flex: 1, fontSize: 14,
+                    color: task.done ? colors.textMuted : isActive ? colors.text : colors.text,
+                    textDecorationLine: task.done ? 'line-through' : 'none',
+                    fontWeight: isActive ? '600' : '400',
+                  }}>
+                    {task.text}
+                  </Text>
+
+                  {/* Active indicator */}
+                  {isActive && (
+                    <View style={{ backgroundColor: colors.foc + '20', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: colors.foc }}>FOCUS</Text>
+                    </View>
+                  )}
+
+                  {/* Delete */}
+                  <TouchableOpacity onPress={() => deleteTask(task.id)} hitSlop={8}>
+                    <Ionicons name="close" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* Add task input */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, paddingHorizontal: 16 }}>
+              <TextInput
+                style={{
+                  flex: 1, fontSize: 14, color: colors.text,
+                  paddingVertical: 8, paddingHorizontal: 12,
+                  backgroundColor: colors.surfaceAlt,
+                  borderRadius: 8, borderWidth: 1, borderColor: colors.border,
+                }}
+                placeholder="Add a task..."
+                placeholderTextColor={colors.textMuted}
+                value={newTaskText}
+                onChangeText={setNewTaskText}
+                onSubmitEditing={addTask}
+                returnKeyType="done"
+              />
+              <TouchableOpacity
+                onPress={addTask}
+                style={{
+                  width: 36, height: 36, borderRadius: 8,
+                  backgroundColor: newTaskText.trim() ? colors.foc : colors.surfaceAlt,
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="add" size={20} color={newTaskText.trim() ? '#fff' : colors.textMuted} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* ── Activity Picker ── */}
@@ -373,11 +525,18 @@ export default function MindScreen() {
             <View style={[s.timerGlow, { backgroundColor: accentColor + '15' }]} />
 
             {selectedActivity ? (
-              <View style={[s.activityBadge, { backgroundColor: accentColor + '20', borderColor: accentColor + '40' }]}>
-                <Ionicons name={ACT_ICONS[selectedActivity.name] ?? 'star'} size={12} color={accentColor} />
-                <Text style={[s.activityBadgeText, { color: accentColor }]}>
-                  {selectedActivity.name}
-                </Text>
+              <View style={{ alignItems: 'center', gap: 6 }}>
+                <View style={[s.activityBadge, { backgroundColor: accentColor + '20', borderColor: accentColor + '40' }]}>
+                  <Ionicons name={ACT_ICONS[selectedActivity.name] ?? 'star'} size={12} color={accentColor} />
+                  <Text style={[s.activityBadgeText, { color: accentColor }]}>
+                    {selectedActivity.name}
+                  </Text>
+                </View>
+                {activeTask && (
+                  <Text style={{ fontSize: 13, color: colors.textSub, fontWeight: '500', maxWidth: 220, textAlign: 'center' }} numberOfLines={1}>
+                    {activeTask.text}
+                  </Text>
+                )}
               </View>
             ) : (
               <Text style={[s.pickHint, { color: colors.textMuted }]}>Select an activity above ↑</Text>
@@ -420,9 +579,14 @@ export default function MindScreen() {
           {/* ── Pomodoro Card ── */}
           {entryMode === 'pomodoro' && (
             <View style={[gs.card, { alignItems: 'center', paddingVertical: 28 }]}>
-              <Text style={{ color: pomodoroPhase === 'work' ? colors.foc : colors.textMuted, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 8 }}>
+              <Text style={{ color: pomodoroPhase === 'work' ? colors.foc : colors.textMuted, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 4 }}>
                 {pomodoroPhase === 'work' ? `WORK · Round ${pomodoroRound}` : 'BREAK'}
               </Text>
+              {activeTask && pomodoroPhase === 'work' && (
+                <Text style={{ fontSize: 13, color: colors.textSub, fontWeight: '500', marginBottom: 8, maxWidth: 220, textAlign: 'center' }} numberOfLines={1}>
+                  {activeTask.text}
+                </Text>
+              )}
               <View style={{ marginVertical: 12 }}>
                 {(() => {
                   const phaseElapsed = elapsedSecs - phaseStartSecs;
@@ -499,8 +663,8 @@ export default function MindScreen() {
                   <TouchableOpacity
                     key={n}
                     style={[s.scoreBtn, {
-                      backgroundColor: feeling === n ? colors.art : colors.surfaceAlt,
-                      borderColor: feeling === n ? colors.art : colors.border,
+                      backgroundColor: feeling === n ? colors.foc : colors.surfaceAlt,
+                      borderColor: feeling === n ? colors.foc : colors.border,
                     }]}
                     onPress={() => setFeeling(n)}
                   >
@@ -508,7 +672,7 @@ export default function MindScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-              <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.art }]} onPress={saveSession}>
+              <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.foc }]} onPress={saveSession}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Ionicons name="checkmark-circle" size={18} color="#fff" />
                   <Text style={gs.btnPrimaryText}>Save Session</Text>
@@ -629,8 +793,8 @@ const s = StyleSheet.create({
   },
   activityBadgeText: { fontWeight: '700', fontSize: 13 },
   pickHint: { fontSize: 14, fontStyle: 'italic' },
-  timerDisplay: { fontSize: 52, fontWeight: '900', letterSpacing: 2, fontVariant: ['tabular-nums'] },
-  timerLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 2, marginTop: 2 },
+  timerDisplay: { fontSize: 58, fontWeight: '900', letterSpacing: 2, fontVariant: ['tabular-nums'] },
+  timerLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 2, marginTop: 4 },
   feelingHint: { fontSize: 13, marginBottom: 4 },
   scoreBtn: {
     width: 42, height: 42, borderRadius: 10, borderWidth: 1,
