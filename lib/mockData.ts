@@ -1,8 +1,10 @@
 import {
   saveData, loadData, KEYS, generateId,
   SleepLog, WaterLog, WeightLog, NutritionLog, StepLog,
-  WorkoutLog, MindLog, SocialLog, Program, Person, MindActivity
+  WorkoutLog, MindLog, SocialLog, Program, Person, MindActivity,
+  DEFAULT_STAT_LEVELS,
 } from './storage';
+import { computeLevel } from './xp';
 
 export async function generateRandomData(daysToGenerate: number = 7) {
   const dates: string[] = [];
@@ -100,4 +102,42 @@ export async function generateRandomData(daysToGenerate: number = 7) {
   await saveData(KEYS.socialLogs, socialLogs);
   await saveData(KEYS.stepLogs, stepLogs);
 
+  // Compute XP from generated logs using the same rules as the real app
+  const DEFAULT_SLEEP_GOAL = 7.5;
+  const DEFAULT_WATER_GOAL = 2500;
+
+  let vitXp = 0;
+  for (const l of sleepLogs) {
+    vitXp += 10;
+    if (l.hours >= DEFAULT_SLEEP_GOAL) vitXp += 15;
+  }
+  for (const l of waterLogs) {
+    vitXp += 5;
+    if (l.totalMl >= DEFAULT_WATER_GOAL) vitXp += 15;
+  }
+
+  let strXp = 0;
+  for (const _ of workoutLogs) strXp += 20;
+  for (const _ of stepLogs) strXp += 15;
+
+  let focXp = 0;
+  for (const l of mindLogs) {
+    focXp += Math.min(Math.floor(l.durationMinutes / 5) * 2, 40);
+  }
+
+  let socXp = 0;
+  for (const _ of socialLogs) socXp += 10;
+
+  const vitResult = computeLevel(vitXp);
+  const strResult = computeLevel(strXp);
+  const focResult = computeLevel(focXp);
+  const socResult = computeLevel(socXp);
+
+  await saveData(KEYS.statLevels, {
+    vit: { level: vitResult.level, xp: vitResult.xp },
+    str: { level: strResult.level, xp: strResult.xp },
+    foc: { level: focResult.level, xp: focResult.xp },
+    soc: { level: socResult.level, xp: socResult.xp },
+    dis: DEFAULT_STAT_LEVELS.dis,
+  });
 }
