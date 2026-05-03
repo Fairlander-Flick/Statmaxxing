@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState, useEffect } from 'react';
 import { useTheme, makeGlobalStyles } from '../lib/ThemeContext';
 import { useLayout } from '../lib/useLayout';
-import { KEYS } from '../lib/storage';
+import { KEYS, loadData, saveData, WeeklyGoals, DEFAULT_WEEKLY_GOALS } from '../lib/storage';
 import { useGoals } from '../lib/useGoals';
 import { generateRandomData } from '../lib/mockData';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -70,6 +70,9 @@ export default function SettingsScreen() {
 
   const { goals, setGoal } = useGoals();
 
+  const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoals>(DEFAULT_WEEKLY_GOALS);
+  const [weeklyGoalsDraft, setWeeklyGoalsDraft] = useState<WeeklyGoals>(DEFAULT_WEEKLY_GOALS);
+
   const [goalInputs, setGoalInputs] = useState({
     steps: '',
     sleepHours: '',
@@ -81,6 +84,13 @@ export default function SettingsScreen() {
     carbsG: '',
     fatG: '',
   });
+
+  useEffect(() => {
+    loadData<WeeklyGoals>(KEYS.weeklyGoals, DEFAULT_WEEKLY_GOALS).then(wg => {
+      setWeeklyGoals(wg);
+      setWeeklyGoalsDraft(wg);
+    });
+  }, []);
 
   useEffect(() => {
     setGoalInputs({
@@ -121,6 +131,11 @@ export default function SettingsScreen() {
   const clearWeightTarget = () => {
     setGoalInputs(prev => ({ ...prev, weightTargetKg: '' }));
     setGoal('weightTargetKg', null);
+  };
+
+  const saveWeeklyGoals = async () => {
+    await saveData(KEYS.weeklyGoals, weeklyGoalsDraft);
+    setWeeklyGoals(weeklyGoalsDraft);
   };
 
   const handleGenerateMockData = async () => {
@@ -409,6 +424,42 @@ export default function SettingsScreen() {
               />
             </View>
           </SectionCard>
+
+          {/* ── Weekly Goals ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 24, marginBottom: 12 }]}>Weekly Goals</Text>
+          <View style={gs.card}>
+            {([
+              { label: 'Focus (min/week)', key: 'focusMinutes' as keyof WeeklyGoals, step: 30 },
+              { label: 'Gym sessions/week', key: 'gymSessions' as keyof WeeklyGoals, step: 1 },
+              { label: 'Water (ml/week)', key: 'waterMlTotal' as keyof WeeklyGoals, step: 500 },
+              { label: 'Calories (kcal/week)', key: 'caloriesTotal' as keyof WeeklyGoals, step: 500 },
+              { label: 'Steps/week', key: 'stepsTotal' as keyof WeeklyGoals, step: 1000 },
+            ] as { label: string; key: keyof WeeklyGoals; step: number }[]).map(field => (
+              <View key={field.key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <Text style={{ fontSize: 14, color: colors.textSub }}>{field.label}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => setWeeklyGoalsDraft(d => ({ ...d, [field.key]: Math.max(0, d[field.key] - field.step) }))}
+                    style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
+                  >
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>−</Text>
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, minWidth: 60, textAlign: 'center' }}>
+                    {weeklyGoalsDraft[field.key].toLocaleString()}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setWeeklyGoalsDraft(d => ({ ...d, [field.key]: d[field.key] + field.step }))}
+                    style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
+                  >
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+            <TouchableOpacity style={[gs.btnPrimary, { marginTop: 16 }]} onPress={saveWeeklyGoals}>
+              <Text style={gs.btnPrimaryText}>Save Weekly Goals</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* ── Preferences ── */}
           <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Preferences</Text>
