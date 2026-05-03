@@ -10,6 +10,7 @@ import {
   saveData, loadData, appendToList, KEYS, toDay, generateId,
   Person, PersonType, SocialLog,
 } from '../lib/storage';
+import { awardXP } from '../lib/xp';
 
 const PERSON_TYPES: PersonType[] = ['Aile', 'Arkadaş', 'Hayvan', 'Diğer'];
 const TYPE_ICON: Record<PersonType, React.ComponentProps<typeof Ionicons>['name']> = {
@@ -83,6 +84,7 @@ export default function SocialScreen() {
     setAllSocialLogs(updated);
     setTodayLogs(updated.filter((l) => l.date === today));
     setMinutes(''); setSelectedPersonId(null);
+    await awardXP('soc', 10);
   };
 
   const deleteSocialLog = async (id: string) => {
