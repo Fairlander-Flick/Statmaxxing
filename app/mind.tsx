@@ -84,11 +84,19 @@ export default function MindScreen() {
   const [newActivityStat, setNewActivityStat] = useState('FOC');
   const [timerRunning, setTimerRunning] = useState(false);
   const [elapsedSecs, setElapsedSecs] = useState(0);
-  const [entryMode, setEntryMode] = useState<'timer' | 'manual'>('timer');
+  const [entryMode, setEntryMode] = useState<'timer' | 'pomodoro' | 'manual'>('timer');
   const [manualHours, setManualHours] = useState('');
   const [manualMins, setManualMins] = useState('');
+  const [pomodoroPhase, setPomodoroPhase] = useState<'work' | 'break'>('work');
+  const [pomodoroRound, setPomodoroRound] = useState(1);
+  const [phaseStartSecs, setPhaseStartSecs] = useState(0);
+  const [workSecsAccum, setWorkSecsAccum] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef = useRef<number | null>(null);
+  const timerStartRef = useRef<number | null>(null);
+  const elapsedAtStartRef = useRef(0);
+  const entryModeRef = useRef(entryMode);
+  const pomodoroPhaseRef = useRef(pomodoroPhase);
+  const phaseStartSecsRef = useRef(phaseStartSecs);
   const today = toDay();
 
   useEffect(() => {
@@ -96,11 +104,35 @@ export default function MindScreen() {
     loadData<MindLog[]>(KEYS.mindLogs, []).then((logs) => setTodayLogs(logs.filter((l) => l.date === today)));
   }, []);
 
+  useEffect(() => { entryModeRef.current = entryMode; }, [entryMode]);
+  useEffect(() => { pomodoroPhaseRef.current = pomodoroPhase; }, [pomodoroPhase]);
+  useEffect(() => { phaseStartSecsRef.current = phaseStartSecs; }, [phaseStartSecs]);
+
   useEffect(() => {
     if (timerRunning) {
-      startTimeRef.current = Date.now() - elapsedSecs * 1000;
-      intervalRef.current = setInterval(() =>
-        setElapsedSecs(Math.floor((Date.now() - (startTimeRef.current ?? Date.now())) / 1000)), 1000);
+      timerStartRef.current = Date.now();
+      elapsedAtStartRef.current = elapsedSecs;
+      intervalRef.current = setInterval(() => {
+        const elapsed = elapsedAtStartRef.current + Math.floor((Date.now() - (timerStartRef.current ?? Date.now())) / 1000);
+        setElapsedSecs(elapsed);
+        if (entryModeRef.current === 'pomodoro') {
+          const phaseElapsed = elapsed - phaseStartSecsRef.current;
+          const phaseDuration = pomodoroPhaseRef.current === 'work' ? 25 * 60 : 5 * 60;
+          if (phaseElapsed >= phaseDuration) {
+            if (pomodoroPhaseRef.current === 'work') {
+              setWorkSecsAccum(w => w + phaseDuration);
+              setPomodoroPhase('break');
+              pomodoroPhaseRef.current = 'break';
+            } else {
+              setPomodoroPhase('work');
+              pomodoroPhaseRef.current = 'work';
+              setPomodoroRound(r => r + 1);
+            }
+            setPhaseStartSecs(elapsed);
+            phaseStartSecsRef.current = elapsed;
+          }
+        }
+      }, 1000);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
@@ -109,6 +141,11 @@ export default function MindScreen() {
 
   const toggleTimer = () => { if (!selectedActivity) return; setTimerRunning((r) => !r); };
   const resetTimer = () => { setTimerRunning(false); setElapsedSecs(0); };
+  const resetPomodoro = () => {
+    setTimerRunning(false); setElapsedSecs(0);
+    setPomodoroPhase('work'); setPomodoroRound(1);
+    setPhaseStartSecs(0); setWorkSecsAccum(0);
+  };
 
   const saveManualSession = async () => {
     const h = parseInt(manualHours || '0');
@@ -128,14 +165,18 @@ export default function MindScreen() {
 
   const saveSession = async () => {
     if (!selectedActivity || elapsedSecs < 10) return;
+    const durationMinutes = entryMode === 'pomodoro'
+      ? Math.round((workSecsAccum + (pomodoroPhase === 'work' ? elapsedSecs - phaseStartSecs : 0)) / 60)
+      : Math.round(elapsedSecs / 60);
+    if (durationMinutes <= 0) return;
     const log: MindLog = {
       id: generateId(), date: today, activityId: selectedActivity.id,
       activityName: selectedActivity.name, statBoost: selectedActivity.statBoost,
-      durationMinutes: Math.round(elapsedSecs / 60), feelingScore: feeling,
+      durationMinutes, feelingScore: feeling,
     };
     const updated = await appendToList<MindLog>(KEYS.mindLogs, log);
     setTodayLogs(updated.filter((l) => l.date === today));
-    resetTimer();
+    if (entryMode === 'pomodoro') resetPomodoro(); else resetTimer();
   };
 
   const addActivity = async () => {
@@ -230,22 +271,26 @@ export default function MindScreen() {
 
           {/* ── Mode Toggle ── */}
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-            {(['timer', 'manual'] as const).map((mode) => (
+            {(['timer', 'pomodoro', 'manual'] as const).map((mode) => (
               <TouchableOpacity
                 key={mode}
-                onPress={() => setEntryMode(mode)}
+                onPress={() => {
+                  setTimerRunning(false);
+                  setEntryMode(mode);
+                  if (mode === 'pomodoro') resetPomodoro();
+                }}
                 style={[s.modeBtn, {
                   backgroundColor: entryMode === mode ? colors.accentDim : colors.surfaceAlt,
                   borderColor: entryMode === mode ? colors.accent : colors.border,
                 }]}
               >
                 <Ionicons
-                  name={mode === 'timer' ? 'timer-outline' : 'create-outline'}
+                  name={mode === 'timer' ? 'timer-outline' : mode === 'pomodoro' ? 'cafe-outline' : 'create-outline'}
                   size={15}
                   color={entryMode === mode ? colors.accent : colors.textSub}
                 />
                 <Text style={[s.modeBtnText, { color: entryMode === mode ? colors.accent : colors.textSub }]}>
-                  {mode === 'timer' ? 'Timer' : 'Log Manually'}
+                  {mode === 'timer' ? 'Timer' : mode === 'pomodoro' ? 'Pomodoro' : 'Log Manually'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -370,6 +415,78 @@ export default function MindScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          )}
+
+          {/* ── Pomodoro Card ── */}
+          {entryMode === 'pomodoro' && (
+            <View style={[gs.card, { alignItems: 'center', paddingVertical: 28 }]}>
+              <Text style={{ color: pomodoroPhase === 'work' ? colors.foc : colors.textMuted, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 8 }}>
+                {pomodoroPhase === 'work' ? `WORK · Round ${pomodoroRound}` : 'BREAK'}
+              </Text>
+              <View style={{ marginVertical: 12 }}>
+                {(() => {
+                  const phaseElapsed = elapsedSecs - phaseStartSecs;
+                  const phaseDuration = pomodoroPhase === 'work' ? 25 * 60 : 5 * 60;
+                  const progress = phaseElapsed / phaseDuration;
+                  const remaining = phaseDuration - phaseElapsed;
+                  return (
+                    <TimerRing
+                      progress={progress}
+                      elapsed={formatTime(remaining > 0 ? remaining : 0)}
+                      isRunning={timerRunning}
+                      color={pomodoroPhase === 'work' ? colors.foc : colors.textMuted}
+                    />
+                  );
+                })()}
+              </View>
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, width: '100%' }}>
+                <TouchableOpacity
+                  style={[gs.btnPrimary, { flex: 1, backgroundColor: colors.foc, opacity: selectedActivity ? 1 : 0.4 }]}
+                  onPress={() => { if (selectedActivity) setTimerRunning(r => !r); }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name={timerRunning ? 'pause' : 'play'} size={16} color="#fff" />
+                    <Text style={gs.btnPrimaryText}>{timerRunning ? 'Pause' : 'Start'}</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity style={gs.btnSecondary} onPress={resetPomodoro}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="refresh" size={16} color={colors.text} />
+                    <Text style={gs.btnSecondaryText}>Reset</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* ── Pomodoro Save ── */}
+          {entryMode === 'pomodoro' && (workSecsAccum > 0 || (pomodoroPhase === 'work' && elapsedSecs > phaseStartSecs)) && (
+            <View style={gs.card}>
+              <Text style={[gs.cardTitle, { marginBottom: 4 }]}>Session Quality</Text>
+              <Text style={[s.feelingHint, { color: colors.textMuted }]}>
+                How focused were you? {feeling}/10 · {Math.round((workSecsAccum + (pomodoroPhase === 'work' ? elapsedSecs - phaseStartSecs : 0)) / 60)}m work
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 16, justifyContent: 'center' }}>
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                  <TouchableOpacity
+                    key={n}
+                    style={[s.scoreBtn, {
+                      backgroundColor: feeling === n ? colors.foc : colors.surfaceAlt,
+                      borderColor: feeling === n ? colors.foc : colors.border,
+                    }]}
+                    onPress={() => setFeeling(n)}
+                  >
+                    <Text style={[s.scoreBtnText, { color: feeling === n ? '#fff' : colors.textSub }]}>{n}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.foc }]} onPress={saveSession}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="checkmark-circle" size={18} color="#fff" />
+                  <Text style={gs.btnPrimaryText}>Save Session</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
           )}
 
           {/* ── Feeling + Save (when timer has run) ── */}

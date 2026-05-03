@@ -13,9 +13,9 @@ import {
   saveData, loadData, appendToList, KEYS, toDay, generateId,
   SleepLog, WaterLog, WeightLog, FoodItem, NutritionLog, Macro,
 } from '../lib/storage';
+import { useGoals } from '../lib/useGoals';
 
 type HealthTab = 'sleep' | 'water' | 'weight' | 'nutrition';
-const WATER_GOAL_DEFAULT = 2500;
 
 export default function HealthScreen() {
   const { colors } = useTheme();
@@ -33,8 +33,8 @@ export default function HealthScreen() {
   const [activeTab, setActiveTab] = useState<HealthTab>('sleep');
   const [sleepHours, setSleepHours] = useState('');
   const [todaySleep, setTodaySleep] = useState<number | null>(null);
+  const { goals } = useGoals();
   const [waterToday, setWaterToday] = useState(0);
-  const [waterGoal, setWaterGoal] = useState(WATER_GOAL_DEFAULT);
   const [customMl, setCustomMl] = useState('');
   const fillAnim = useRef(new Animated.Value(0)).current;
   const [weightKg, setWeightKg] = useState('');
@@ -73,16 +73,15 @@ export default function HealthScreen() {
       setSleepHistory(logs.slice(-10).reverse());
     });
     loadTodayWater();
-    loadData<number>(KEYS.waterGoal, WATER_GOAL_DEFAULT).then(setWaterGoal);
     loadData<WeightLog[]>(KEYS.weightLogs, []).then(setWeightHistory);
     loadData<FoodItem[]>(KEYS.foodLibrary, []).then(setFoodLibrary);
     loadData<NutritionLog[]>(KEYS.nutritionLogs, []).then((logs) => setTodayNutrition(logs.filter((l) => l.date === today)));
   }, []);
 
   useEffect(() => {
-    const pct = Math.min((waterToday / waterGoal) * 100, 100);
+    const pct = goals.waterMl > 0 ? Math.min((waterToday / goals.waterMl) * 100, 100) : 0;
     Animated.spring(fillAnim, { toValue: pct, useNativeDriver: false, tension: 40, friction: 8 }).start();
-  }, [waterToday, waterGoal]);
+  }, [waterToday, goals.waterMl]);
 
   const loadTodayWater = async () => {
     const logs = await loadData<WaterLog[]>(KEYS.waterLogs, []);
@@ -172,7 +171,7 @@ export default function HealthScreen() {
     setTodayNutrition(updated.filter((l) => l.date === today));
   };
 
-  const waterPct = Math.min((waterToday / waterGoal) * 100, 100);
+  const waterPct = goals.waterMl > 0 ? Math.min((waterToday / goals.waterMl) * 100, 100) : 0;
   
   let periodWeights = weightHistory.slice(-(weightPeriod));
   if (periodWeights.length > 50) {
@@ -284,7 +283,7 @@ export default function HealthScreen() {
                   </View>
                   <View style={{ alignItems: 'flex-start' }}>
                     <Text style={[s.bigStat, { color: colors.foc, fontSize: 44 }]}>{waterToday} ml</Text>
-                    <Text style={[s.bigStatSub, { color: colors.textSub }]}>{waterPct.toFixed(0)}% of {waterGoal} ml</Text>
+                    <Text style={[s.bigStatSub, { color: colors.textSub }]}>{waterPct.toFixed(0)}% of {goals.waterMl} ml</Text>
                     {waterPct >= 100 && (
                       <View style={[gs.pill, { backgroundColor: colors.soc + '20', marginTop: 8 }]}>
                         <Text style={[gs.pillText, { color: colors.soc }]}>🎯 GOAL REACHED</Text>
@@ -373,17 +372,53 @@ export default function HealthScreen() {
                       </TouchableOpacity>
                     ))}
                   </View>
-                  {chartData && (
-                    <View style={[gs.card, { paddingHorizontal: 0, paddingVertical: 12, overflow: 'hidden' }]}>
-                      <LineChart
-                        data={chartData}
-                        width={Math.min(SCREEN_WIDTH - layout.hPadding * 2, layout.maxWidth - layout.hPadding * 2)}
-                        height={200}
-                        chartConfig={{ backgroundColor: colors.surface, backgroundGradientFrom: colors.surface, backgroundGradientTo: colors.surface, decimalPlaces: 1, color: (opacity = 1) => `rgba(34,197,94,${opacity})`, labelColor: () => colors.textSub, propsForDots: { r: '5', strokeWidth: '2', stroke: colors.soc }, propsForBackgroundLines: { stroke: colors.border } }}
-                        bezier style={{ borderRadius: 16 }} withInnerLines={false} withDots={periodWeights.length <= 14}
-                      />
-                    </View>
-                  )}
+                  {chartData && (() => {
+                    const chartW = Math.min(SCREEN_WIDTH - layout.hPadding * 2, layout.maxWidth - layout.hPadding * 2);
+                    const chartH = 200;
+                    const CHART_TOP_PAD = 10;
+                    const CHART_BOTTOM_PAD = 40;
+                    const weights = periodWeights.map(w => w.kg);
+                    const minW = Math.min(...weights);
+                    const maxW = Math.max(...weights);
+                    const range = maxW - minW || 1;
+                    const targetY = goals.weightTargetKg !== null
+                      ? ((maxW - goals.weightTargetKg) / range) * (chartH - CHART_BOTTOM_PAD) + CHART_TOP_PAD
+                      : null;
+                    return (
+                      <View style={[gs.card, { paddingHorizontal: 0, paddingVertical: 12, overflow: 'hidden' }]}>
+                        <View style={{ position: 'relative' }}>
+                          <LineChart
+                            data={chartData}
+                            width={chartW}
+                            height={chartH}
+                            chartConfig={{ backgroundColor: colors.surface, backgroundGradientFrom: colors.surface, backgroundGradientTo: colors.surface, decimalPlaces: 1, color: () => colors.soc, labelColor: () => colors.textMuted, propsForDots: { r: '3', strokeWidth: '1', stroke: colors.soc } }}
+                            bezier
+                            style={{ borderRadius: 8 }}
+                            withInnerLines={false}
+                            withOuterLines={false}
+                          />
+                          {targetY !== null && targetY > 0 && targetY < chartH && (
+                            <View
+                              style={{
+                                position: 'absolute',
+                                top: targetY,
+                                left: 0,
+                                right: 0,
+                                height: 1,
+                                borderTopWidth: 1,
+                                borderTopColor: colors.textMuted,
+                                borderStyle: 'dashed',
+                              }}
+                            >
+                              <Text style={{ position: 'absolute', right: 8, top: -14, fontSize: 10, color: colors.textMuted, fontWeight: '600' }}>
+                                Target
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })()}
                 </>
               )}
               {weightHistory.length > 0 && (
@@ -428,6 +463,17 @@ export default function HealthScreen() {
                   <MacroChip label="Fiber" value={totalToday.fiber} color={colors.soc} bg={colors.surfaceAlt} />
                 </View>
               </View>
+
+              {/* Macro progress bars */}
+              {(goals.calories > 0 || goals.proteinG > 0 || goals.carbsG > 0 || goals.fatG > 0) && (
+                <View style={gs.card}>
+                  <Text style={[gs.cardTitle, { marginBottom: 12 }]}>Progress to Goals</Text>
+                  <MacroBar label="Calories" actual={totalToday.calories} target={goals.calories} color={colors.vit} unit="kcal" />
+                  <MacroBar label="Protein"  actual={totalToday.protein}  target={goals.proteinG} color={colors.vit} unit="g" />
+                  <MacroBar label="Carbs"    actual={totalToday.carbs}    target={goals.carbsG}   color={colors.vit} unit="g" />
+                  <MacroBar label="Fat"      actual={totalToday.fat}      target={goals.fatG}     color={colors.vit} unit="g" />
+                </View>
+              )}
 
               <View style={[{ flexDirection: 'row', gap: 10, marginBottom: 14 }, fw]}>
                 {foodLibrary.length > 0 && (
@@ -521,6 +567,29 @@ export default function HealthScreen() {
         </View>
       </Modal>
     </SafeAreaView>
+  );
+}
+
+function MacroBar({ label, actual, target, color, unit }: {
+  label: string; actual: number; target: number; color: string; unit: string;
+}) {
+  const { colors } = useTheme();
+  if (target <= 0) return null;
+  const pct = (actual / target) * 100;
+  return (
+    <View style={{ marginBottom: 8 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+        <Text style={{ color: colors.textSub, fontSize: 12, fontWeight: '600' }}>{label}</Text>
+        <Text style={{ color: colors.textSub, fontSize: 12 }}>
+          {actual.toFixed(0)} / {target} {unit}
+          {'  '}
+          <Text style={{ color: pct >= 100 ? color : colors.textMuted }}>{pct.toFixed(0)}%</Text>
+        </Text>
+      </View>
+      <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.surfaceAlt }}>
+        <View style={{ height: 6, borderRadius: 3, backgroundColor: color, width: `${pct}%` }} />
+      </View>
+    </View>
   );
 }
 

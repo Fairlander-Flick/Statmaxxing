@@ -4,7 +4,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState, useEffect } from 'react';
 import { useTheme, makeGlobalStyles } from '../lib/ThemeContext';
 import { useLayout } from '../lib/useLayout';
-import { saveData, loadData, KEYS } from '../lib/storage';
+import { KEYS } from '../lib/storage';
+import { useGoals } from '../lib/useGoals';
 import { generateRandomData } from '../lib/mockData';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -58,7 +59,6 @@ export default function SettingsScreen() {
   const layout = useLayout();
   const gs = makeGlobalStyles(colors);
 
-  const [waterGoal, setWaterGoal] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [mockPeriod, setMockPeriod] = useState<number>(30);
 
@@ -68,13 +68,59 @@ export default function SettingsScreen() {
     { value: 1825, label: '5Y' }, { value: 3650, label: '10Y' },
   ];
 
-  useEffect(() => {
-    loadData<number>(KEYS.waterGoal, 2500).then((val) => setWaterGoal(val.toString()));
-  }, []);
+  const { goals, setGoal } = useGoals();
 
-  const handleSaveWaterGoal = async () => {
-    const goal = parseInt(waterGoal);
-    if (!isNaN(goal) && goal > 0) await saveData(KEYS.waterGoal, goal);
+  const [goalInputs, setGoalInputs] = useState({
+    steps: '',
+    sleepHours: '',
+    waterMl: '',
+    focusMinutes: '',
+    weightTargetKg: '',
+    calories: '',
+    proteinG: '',
+    carbsG: '',
+    fatG: '',
+  });
+
+  useEffect(() => {
+    setGoalInputs({
+      steps: goals.steps.toString(),
+      sleepHours: goals.sleepHours.toString(),
+      waterMl: goals.waterMl.toString(),
+      focusMinutes: goals.focusMinutes.toString(),
+      weightTargetKg: goals.weightTargetKg !== null ? goals.weightTargetKg.toString() : '',
+      calories: goals.calories.toString(),
+      proteinG: goals.proteinG.toString(),
+      carbsG: goals.carbsG.toString(),
+      fatG: goals.fatG.toString(),
+    });
+  }, [goals.steps, goals.waterMl, goals.sleepHours, goals.focusMinutes,
+      goals.weightTargetKg, goals.calories, goals.proteinG, goals.carbsG, goals.fatG]);
+
+  const handleGoalInput = (key: keyof typeof goalInputs, val: string) => {
+    setGoalInputs(prev => ({ ...prev, [key]: val }));
+  };
+
+  const handleGoalSave = (key: 'steps' | 'waterMl' | 'focusMinutes' | 'calories' | 'proteinG' | 'carbsG' | 'fatG') => {
+    const parsed = parseInt(goalInputs[key]);
+    if (!isNaN(parsed) && parsed >= 0) setGoal(key, parsed);
+  };
+
+  const handleGoalSaveFloat = (key: 'sleepHours') => {
+    const parsed = parseFloat(goalInputs[key]);
+    if (!isNaN(parsed) && parsed >= 0) setGoal(key, parsed);
+  };
+
+  const handleWeightTargetSave = () => {
+    const raw = goalInputs.weightTargetKg;
+    if (raw === '') { setGoal('weightTargetKg', null); return; }
+    const parsed = parseFloat(raw);
+    if (!isNaN(parsed) && parsed > 0) setGoal('weightTargetKg', parsed);
+  };
+
+  const clearWeightTarget = () => {
+    setGoalInputs(prev => ({ ...prev, weightTargetKg: '' }));
+    setGoal('weightTargetKg', null);
   };
 
   const handleGenerateMockData = async () => {
@@ -168,26 +214,205 @@ export default function SettingsScreen() {
             />
           </SectionCard>
 
-          {/* ── Preferences ── */}
-          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Preferences</Text>
+          {/* ── Goals & Targets ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Goals & Targets</Text>
           <SectionCard>
+            {/* Steps */}
             <View style={[s.settingRow, { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
-              <View style={[s.settingIcon, { backgroundColor: colors.foc + '20' }]}>
-                <Ionicons name="water" size={18} color={colors.foc} />
+              <View style={[s.settingIcon, { backgroundColor: colors.str + '20' }]}>
+                <Ionicons name="footsteps-outline" size={18} color={colors.str} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.settingLabel, { color: colors.text }]}>Daily Water Goal</Text>
-                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>ml per day</Text>
+                <Text style={[s.settingLabel, { color: colors.text }]}>Daily Steps</Text>
+                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>steps</Text>
               </View>
               <TextInput
                 style={[s.inlineInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
-                value={waterGoal}
-                onChangeText={setWaterGoal}
-                onBlur={handleSaveWaterGoal}
+                value={goalInputs.steps}
+                onChangeText={(v) => handleGoalInput('steps', v)}
+                onBlur={() => handleGoalSave('steps')}
+                onSubmitEditing={() => handleGoalSave('steps')}
                 keyboardType="numeric"
                 selectTextOnFocus
               />
             </View>
+
+            {/* Sleep */}
+            <View style={[s.settingRow, { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+              <View style={[s.settingIcon, { backgroundColor: colors.art + '20' }]}>
+                <Ionicons name="moon-outline" size={18} color={colors.art} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.settingLabel, { color: colors.text }]}>Sleep Goal</Text>
+                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>h per night</Text>
+              </View>
+              <TextInput
+                style={[s.inlineInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                value={goalInputs.sleepHours}
+                onChangeText={(v) => handleGoalInput('sleepHours', v)}
+                onBlur={() => handleGoalSaveFloat('sleepHours')}
+                onSubmitEditing={() => handleGoalSaveFloat('sleepHours')}
+                keyboardType="decimal-pad"
+                selectTextOnFocus
+              />
+            </View>
+
+            {/* Water */}
+            <View style={[s.settingRow, { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+              <View style={[s.settingIcon, { backgroundColor: colors.vit + '20' }]}>
+                <Ionicons name="water-outline" size={18} color={colors.vit} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.settingLabel, { color: colors.text }]}>Water Goal</Text>
+                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>ml per day</Text>
+              </View>
+              <TextInput
+                style={[s.inlineInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                value={goalInputs.waterMl}
+                onChangeText={(v) => handleGoalInput('waterMl', v)}
+                onBlur={() => handleGoalSave('waterMl')}
+                onSubmitEditing={() => handleGoalSave('waterMl')}
+                keyboardType="numeric"
+                selectTextOnFocus
+              />
+            </View>
+
+            {/* Focus */}
+            <View style={[s.settingRow, { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+              <View style={[s.settingIcon, { backgroundColor: colors.foc + '20' }]}>
+                <Ionicons name="timer-outline" size={18} color={colors.foc} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.settingLabel, { color: colors.text }]}>Focus Goal</Text>
+                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>min per day</Text>
+              </View>
+              <TextInput
+                style={[s.inlineInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                value={goalInputs.focusMinutes}
+                onChangeText={(v) => handleGoalInput('focusMinutes', v)}
+                onBlur={() => handleGoalSave('focusMinutes')}
+                onSubmitEditing={() => handleGoalSave('focusMinutes')}
+                keyboardType="numeric"
+                selectTextOnFocus
+              />
+            </View>
+
+            {/* Target Weight */}
+            <View style={[s.settingRow, { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+              <View style={[s.settingIcon, { backgroundColor: colors.soc + '20' }]}>
+                <Ionicons name="analytics-outline" size={18} color={colors.soc} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.settingLabel, { color: colors.text }]}>Target Weight</Text>
+                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>kg — blank to hide line</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <TextInput
+                  style={[s.inlineInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                  value={goalInputs.weightTargetKg}
+                  onChangeText={(v) => handleGoalInput('weightTargetKg', v)}
+                  onBlur={handleWeightTargetSave}
+                  onSubmitEditing={handleWeightTargetSave}
+                  keyboardType="decimal-pad"
+                  placeholder="—"
+                  placeholderTextColor={colors.textMuted}
+                  selectTextOnFocus
+                />
+                {goals.weightTargetKg !== null && (
+                  <TouchableOpacity onPress={clearWeightTarget}>
+                    <Ionicons name="close-circle-outline" size={20} color={colors.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Nutrition sub-label */}
+            <Text style={[s.settingSubLabel, { color: colors.textMuted, marginTop: 10, marginBottom: 2, paddingLeft: 14, fontWeight: '600', letterSpacing: 0.5 }]}>NUTRITION TARGETS</Text>
+
+            {/* Calories */}
+            <View style={[s.settingRow, { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+              <View style={[s.settingIcon, { backgroundColor: colors.dis + '20' }]}>
+                <Ionicons name="flame-outline" size={18} color={colors.dis} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.settingLabel, { color: colors.text }]}>Daily Calories</Text>
+                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>kcal</Text>
+              </View>
+              <TextInput
+                style={[s.inlineInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                value={goalInputs.calories}
+                onChangeText={(v) => handleGoalInput('calories', v)}
+                onBlur={() => handleGoalSave('calories')}
+                onSubmitEditing={() => handleGoalSave('calories')}
+                keyboardType="numeric"
+                selectTextOnFocus
+              />
+            </View>
+
+            {/* Protein */}
+            <View style={[s.settingRow, { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+              <View style={[s.settingIcon, { backgroundColor: colors.foc + '20' }]}>
+                <Ionicons name="barbell-outline" size={18} color={colors.foc} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.settingLabel, { color: colors.text }]}>Protein</Text>
+                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>g per day</Text>
+              </View>
+              <TextInput
+                style={[s.inlineInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                value={goalInputs.proteinG}
+                onChangeText={(v) => handleGoalInput('proteinG', v)}
+                onBlur={() => handleGoalSave('proteinG')}
+                onSubmitEditing={() => handleGoalSave('proteinG')}
+                keyboardType="numeric"
+                selectTextOnFocus
+              />
+            </View>
+
+            {/* Carbs */}
+            <View style={[s.settingRow, { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+              <View style={[s.settingIcon, { backgroundColor: colors.str + '20' }]}>
+                <Ionicons name="nutrition-outline" size={18} color={colors.str} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.settingLabel, { color: colors.text }]}>Carbs</Text>
+                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>g per day</Text>
+              </View>
+              <TextInput
+                style={[s.inlineInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                value={goalInputs.carbsG}
+                onChangeText={(v) => handleGoalInput('carbsG', v)}
+                onBlur={() => handleGoalSave('carbsG')}
+                onSubmitEditing={() => handleGoalSave('carbsG')}
+                keyboardType="numeric"
+                selectTextOnFocus
+              />
+            </View>
+
+            {/* Fat */}
+            <View style={[s.settingRow, { borderBottomWidth: 0 }]}>
+              <View style={[s.settingIcon, { backgroundColor: colors.art + '20' }]}>
+                <Ionicons name="ellipse-outline" size={18} color={colors.art} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.settingLabel, { color: colors.text }]}>Fat</Text>
+                <Text style={[s.settingSubLabel, { color: colors.textMuted }]}>g per day</Text>
+              </View>
+              <TextInput
+                style={[s.inlineInput, { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                value={goalInputs.fatG}
+                onChangeText={(v) => handleGoalInput('fatG', v)}
+                onBlur={() => handleGoalSave('fatG')}
+                onSubmitEditing={() => handleGoalSave('fatG')}
+                keyboardType="numeric"
+                selectTextOnFocus
+              />
+            </View>
+          </SectionCard>
+
+          {/* ── Preferences ── */}
+          <Text style={[gs.sectionTitle, { marginTop: 8 }]}>Preferences</Text>
+          <SectionCard>
             <SettingRow
               icon="scale-outline"
               iconColor={colors.textMuted}
