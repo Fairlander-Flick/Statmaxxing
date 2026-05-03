@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ScrollView, Text, View, StyleSheet, RefreshControl,
-  Platform, useWindowDimensions, TouchableOpacity, PanResponder,
+  Platform, useWindowDimensions, TouchableOpacity, PanResponder, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -9,7 +9,7 @@ import Svg, { Path, Defs, LinearGradient, Stop, Line, Circle, Rect } from 'react
 import { useTheme, makeGlobalStyles, ThemeColors } from '../lib/ThemeContext';
 import { useLayout } from '../lib/useLayout';
 import {
-  loadData, KEYS, toDay,
+  loadData, saveData, KEYS, toDay, generateId,
   SleepLog, WaterLog, WeightLog, WorkoutLog, MindLog, SocialLog, NutritionLog, StepLog,
   StatLevels, DEFAULT_STAT_LEVELS, Goals,
   WeeklyStreakState, WeeklyGoals, DEFAULT_WEEKLY_GOALS, DailyNote,
@@ -463,6 +463,9 @@ export default function DashboardScreen() {
   const [weekProgress, setWeekProgress] = useState<WeeklyProgress>({ focusMinutes: 0, gymSessions: 0, waterMlTotal: 0, caloriesTotal: 0, stepsTotal: 0 });
   const [calendarDays, setCalendarDays] = useState<DayData[]>([]);
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([]);
+  const [noteText, setNoteText] = useState('');
+  const [noteMood, setNoteMood] = useState(7);
+  const [noteSaved, setNoteSaved] = useState(false);
 
   // Per-graph data
   const [caloriesData, setCaloriesData] = useState<DayPoint[]>([]);
@@ -612,6 +615,8 @@ export default function DashboardScreen() {
 
     const notes = await loadData<DailyNote[]>(KEYS.dailyNotes, []);
     setDailyNotes(notes);
+    const todayNote = notes.find(n => n.date === today);
+    if (todayNote) { setNoteText(todayNote.text); setNoteMood(todayNote.mood); }
 
     const last90 = Array.from({ length: 90 }, (_, i) => getDateBefore(89 - i));
     const calDays: DayData[] = last90.map(date => {
@@ -645,6 +650,22 @@ export default function DashboardScreen() {
     await computeStats();
     setRefreshing(false);
   }, [computeStats]);
+
+  const saveDailyNote = async () => {
+    if (!noteText.trim()) return;
+    const notes = await loadData<DailyNote[]>(KEYS.dailyNotes, []);
+    const existing = notes.find(n => n.date === today);
+    let updated: DailyNote[];
+    if (existing) {
+      updated = notes.map(n => n.date === today ? { ...n, text: noteText.trim(), mood: noteMood } : n);
+    } else {
+      updated = [...notes, { id: generateId(), date: today, text: noteText.trim(), mood: noteMood }];
+    }
+    await saveData(KEYS.dailyNotes, updated);
+    setDailyNotes(updated);
+    setNoteSaved(true);
+    setTimeout(() => setNoteSaved(false), 2000);
+  };
 
   // Derived
   const hour = new Date().getHours();
@@ -777,6 +798,43 @@ export default function DashboardScreen() {
           );
         })}
       </View>
+    </View>
+  );
+
+  const noteCard = (
+    <View style={gs.card}>
+      <Text style={[gs.sectionTitle, { marginBottom: 12 }]}>TODAY'S NOTE</Text>
+      <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 8 }}>How are you feeling? {noteMood}/10</Text>
+      <View style={{ flexDirection: 'row', gap: 5, marginBottom: 14, flexWrap: 'wrap' }}>
+        {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+          <TouchableOpacity
+            key={n}
+            onPress={() => setNoteMood(n)}
+            style={{
+              width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+              backgroundColor: noteMood === n ? colors.accent : colors.surfaceAlt,
+              borderWidth: 1, borderColor: noteMood === n ? colors.accent : colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: '700', color: noteMood === n ? '#fff' : colors.textSub }}>{n}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <TextInput
+        style={[gs.input, { color: colors.text, minHeight: 72, textAlignVertical: 'top' }]}
+        placeholder="Write a note about today..."
+        placeholderTextColor={colors.textMuted}
+        multiline
+        value={noteText}
+        onChangeText={setNoteText}
+      />
+      <TouchableOpacity
+        onPress={saveDailyNote}
+        disabled={!noteText.trim()}
+        style={[gs.btnPrimary, { marginTop: 12, opacity: noteText.trim() ? 1 : 0.4 }]}
+      >
+        <Text style={gs.btnPrimaryText}>{noteSaved ? 'Saved ✓' : 'Save Note'}</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -998,6 +1056,7 @@ export default function DashboardScreen() {
 
           {/* Bottom row */}
           <View style={{ gap: 12, marginTop: 20 }}>
+            {noteCard}
             {calendarCard}
             {heatmapCard}
             {weeklyCard}
@@ -1069,6 +1128,7 @@ export default function DashboardScreen() {
           </View>
           {GRAPH_DEFS.filter(g => selectedGraphs.includes(g.id)).map(g => renderGraphCard(g.id))}
           {todayLog}
+          {noteCard}
           {calendarCard}
           {heatmapCard}
           {weeklyCard}
