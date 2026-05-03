@@ -20,6 +20,7 @@ import { useGoals } from '../lib/useGoals';
 import PentagonChart, { PentagonStats } from '../components/PentagonChart';
 import { xpProgress, xpToNextLevel, awardXP } from '../lib/xp';
 import { refreshWeeklyStreak, computeThisWeekProgress, WeeklyProgress } from '../lib/weeklyStats';
+import { computeInsights, Insight } from '../lib/patterns';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type DayPoint = { date: string; value: number; extras?: Record<string, number> };
@@ -464,6 +465,7 @@ export default function DashboardScreen() {
   const [weekProgress, setWeekProgress] = useState<WeeklyProgress>({ focusMinutes: 0, gymSessions: 0, waterMlTotal: 0, caloriesTotal: 0, stepsTotal: 0 });
   const [calendarDays, setCalendarDays] = useState<DayData[]>([]);
   const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([]);
+  const [insights, setInsights] = useState<Insight[]>([]);
   const [noteText, setNoteText] = useState('');
   const [noteMood, setNoteMood] = useState(7);
   const [noteSaved, setNoteSaved] = useState(false);
@@ -644,6 +646,9 @@ export default function DashboardScreen() {
       };
     });
     setCalendarDays(calDays);
+
+    const ins = await computeInsights();
+    setInsights(ins);
   }, [today, selectedWeekIndex]);
 
   useEffect(() => { computeStats(); }, [computeStats]);
@@ -828,6 +833,62 @@ export default function DashboardScreen() {
       </View>
     </View>
   );
+
+  const weeklySummaryCard = (
+    <View style={gs.card}>
+      <Text style={[gs.sectionTitle, { marginBottom: 14 }]}>THIS WEEK</Text>
+      {[
+        { label: 'Focus', thisWeek: weekProgress.focusMinutes, goal: weeklyGoals.focusMinutes, lastWeek: lastWeekSummary.mindMins, unit: 'min', color: colors.foc },
+        { label: 'Gym', thisWeek: weekProgress.gymSessions, goal: weeklyGoals.gymSessions, lastWeek: lastWeekSummary.workouts, unit: 'days', color: colors.str },
+        { label: 'Water', thisWeek: Math.round(weekProgress.waterMlTotal / 1000 * 10) / 10, goal: weeklyGoals.waterMlTotal / 1000, lastWeek: 0, unit: 'L', color: colors.vit },
+        { label: 'Steps', thisWeek: weekProgress.stepsTotal, goal: weeklyGoals.stepsTotal, lastWeek: lastWeekSummary.steps, unit: '', color: colors.dis },
+      ].map(row => {
+        const pct = row.goal > 0 ? Math.min(row.thisWeek / row.goal, 1) : 0;
+        const delta = row.lastWeek > 0 ? row.thisWeek - row.lastWeek : null;
+        return (
+          <View key={row.label} style={{ marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+              <Text style={{ fontSize: 13, color: colors.textSub }}>{row.label}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {delta !== null && delta !== 0 && (
+                  <Text style={{ fontSize: 11, color: delta > 0 ? colors.green : colors.red }}>
+                    {delta > 0 ? '+' : ''}{typeof delta === 'number' && delta % 1 !== 0 ? delta.toFixed(1) : delta} {row.unit}
+                  </Text>
+                )}
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>
+                  {typeof row.thisWeek === 'number' && row.thisWeek % 1 !== 0 ? row.thisWeek.toFixed(1) : row.thisWeek} / {typeof row.goal === 'number' && row.goal % 1 !== 0 ? row.goal.toFixed(1) : row.goal} {row.unit}
+                </Text>
+              </View>
+            </View>
+            <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.surfaceAlt }}>
+              <View style={{ width: `${Math.round(pct * 100)}%` as any, height: 4, borderRadius: 2, backgroundColor: row.color }} />
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+
+  const insightsCard = insights.length > 0 ? (
+    <View style={gs.card}>
+      <Text style={[gs.sectionTitle, { marginBottom: 12 }]}>INSIGHTS</Text>
+      {insights.map((ins, i) => (
+        <View key={i} style={{
+          flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+          marginBottom: i < insights.length - 1 ? 12 : 0,
+        }}>
+          <View style={{
+            width: 28, height: 28, borderRadius: 8,
+            backgroundColor: colors.foc + '20',
+            alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <Text style={{ fontSize: 14 }}>💡</Text>
+          </View>
+          <Text style={{ flex: 1, fontSize: 13, color: colors.textSub, lineHeight: 19 }}>{ins.text}</Text>
+        </View>
+      ))}
+    </View>
+  ) : null;
 
   const noteCard = (
     <View style={gs.card}>
@@ -1090,6 +1151,8 @@ export default function DashboardScreen() {
 
           {/* Bottom row */}
           <View style={{ gap: 12, marginTop: 20 }}>
+            {weeklySummaryCard}
+            {insightsCard}
             {noteCard}
             {calendarCard}
             {heatmapCard}
@@ -1171,6 +1234,8 @@ export default function DashboardScreen() {
           </View>
           {GRAPH_DEFS.filter(g => selectedGraphs.includes(g.id)).map(g => renderGraphCard(g.id))}
           {todayLog}
+          {weeklySummaryCard}
+          {insightsCard}
           {noteCard}
           {calendarCard}
           {heatmapCard}
