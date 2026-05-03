@@ -11,8 +11,11 @@ import { useLayout } from '../lib/useLayout';
 import {
   loadData, KEYS, toDay,
   SleepLog, WaterLog, WeightLog, WorkoutLog, MindLog, SocialLog, NutritionLog, StepLog,
+  StatLevels, DEFAULT_STAT_LEVELS, Goals,
 } from '../lib/storage';
 import { useGoals } from '../lib/useGoals';
+import PentagonChart, { PentagonStats } from '../components/PentagonChart';
+import { xpProgress, xpToNextLevel } from '../lib/xp';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type DayPoint = { date: string; value: number; extras?: Record<string, number> };
@@ -395,6 +398,27 @@ function computeDayScore(
 
 const last30 = Array.from({ length: 30 }, (_, i) => getDateBefore(29 - i));
 
+function computeStatScores(
+  sleep: number | null, water: number, steps: number,
+  workout: number, mindMins: number, socialMins: number,
+  goals: Goals,
+): PentagonStats {
+  const sleepPct  = goals.sleepHours > 0   ? Math.min((sleep ?? 0) / goals.sleepHours, 1) : 0;
+  const waterPct  = goals.waterMl > 0      ? Math.min(water / goals.waterMl, 1) : 0;
+  const stepsPct  = goals.steps > 0        ? Math.min(steps / goals.steps, 1) : 0;
+  const focusPct  = goals.focusMinutes > 0  ? Math.min(mindMins / goals.focusMinutes, 1) : 0;
+  const workout01 = workout > 0 ? 1 : 0;
+  const socPct    = Math.min(socialMins / 60, 1);
+  const dis       = (sleepPct + waterPct + stepsPct + focusPct + workout01) / 5;
+  return {
+    vit: Math.round((sleepPct * 0.5 + waterPct * 0.5) * 100),
+    str: Math.round((stepsPct * 0.5 + workout01 * 0.5) * 100),
+    foc: Math.round(focusPct * 100),
+    soc: Math.round(socPct * 100),
+    dis: Math.round(dis * 100),
+  };
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function DashboardScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
@@ -430,6 +454,7 @@ export default function DashboardScreen() {
   const [dailyScores, setDailyScores] = useState<{ date: string; score: number }[]>([]);
   const [streak, setStreak] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [statLevels, setStatLevels] = useState<StatLevels>(DEFAULT_STAT_LEVELS);
 
   // Per-graph data
   const [caloriesData, setCaloriesData] = useState<DayPoint[]>([]);
@@ -464,6 +489,9 @@ export default function DashboardScreen() {
     const tWeight = weightLogs.find(l => l.date === today)?.kg ?? null;
     const tSteps = stepLogs.find(l => l.date === today)?.steps ?? 0;
     setTodaySummary({ sleep: tSleep, water: tWater, workouts: tWork, mindMins: tMind, socialMins: tSoc, calories: tCal, weight: tWeight, steps: tSteps });
+
+    const levels = await loadData<StatLevels>(KEYS.statLevels, DEFAULT_STAT_LEVELS);
+    setStatLevels(levels);
 
     // This week
     const dAgoStart = (51 - selectedWeekIndex) * 7;
@@ -668,6 +696,45 @@ export default function DashboardScreen() {
     </View>
   );
 
+  const pentagonCard = (
+    <View style={[gs.card, { alignItems: 'center', paddingVertical: 24, marginBottom: 0 }]}>
+      <Text style={[gs.sectionTitle, { marginBottom: 16, alignSelf: 'flex-start' }]}>STAT PROFILE</Text>
+      <PentagonChart
+        stats={computeStatScores(
+          todaySummary.sleep, todaySummary.water, todaySummary.steps,
+          todaySummary.workouts, todaySummary.mindMins, todaySummary.socialMins,
+          goals,
+        )}
+        levels={{
+          vit: statLevels.vit.level,
+          str: statLevels.str.level,
+          foc: statLevels.foc.level,
+          soc: statLevels.soc.level,
+          dis: statLevels.dis.level,
+        }}
+        size={isDesktop ? 280 : 240}
+      />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 20, width: '100%' }}>
+        {(['vit', 'str', 'foc', 'soc', 'dis'] as const).map(stat => {
+          const sl = statLevels[stat];
+          const pct = xpProgress(sl);
+          const statColor = colors[stat];
+          return (
+            <View key={stat} style={{ flex: 1, minWidth: 80 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: statColor, letterSpacing: 0.5 }}>{stat.toUpperCase()}</Text>
+                <Text style={{ fontSize: 10, color: colors.textMuted }}>Lv.{sl.level}</Text>
+              </View>
+              <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.surfaceAlt, overflow: 'hidden' }}>
+                <View style={{ width: `${Math.round(pct * 100)}%` as any, height: 4, borderRadius: 2, backgroundColor: statColor }} />
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+
   const heatmapCard = (
     <View style={gs.card}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -845,6 +912,7 @@ export default function DashboardScreen() {
             {/* Left col — fixed */}
             <View style={{ width: 340, gap: 12 }}>
               {ringSection}
+              {pentagonCard}
               {todayLog}
             </View>
 
@@ -918,11 +986,12 @@ export default function DashboardScreen() {
             ))}
           </View>
 
+          {pentagonCard}
+
           {/* Graph selector */}
-          <View style={{ marginHorizontal: -layout.hPadding, marginBottom: 4 }}>
+          <View style={{ marginHorizontal: -layout.hPadding, marginBottom: 4, marginTop: 12 }}>
             {graphSelector}
           </View>
-
           {GRAPH_DEFS.filter(g => selectedGraphs.includes(g.id)).map(g => renderGraphCard(g.id))}
           {todayLog}
           {heatmapCard}
