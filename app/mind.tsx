@@ -11,6 +11,7 @@ import {
   saveData, loadData, appendToList, KEYS, toDay, generateId,
   MindActivity, MindLog, FocusTask,
 } from '../lib/storage';
+import { awardXP } from '../lib/xp';
 
 const DEFAULT_ACTIVITIES: MindActivity[] = [
   { id: '1', name: 'Coding', statBoost: 'FOC' },
@@ -167,6 +168,8 @@ export default function MindScreen() {
     const updated = await appendToList<MindLog>(KEYS.mindLogs, log);
     setTodayLogs(updated.filter((l) => l.date === today));
     setManualHours(''); setManualMins('');
+    const xpEarned = Math.min(Math.floor(log.durationMinutes / 5) * 2, 40);
+    if (xpEarned > 0) await awardXP('foc', xpEarned);
   };
 
   const saveSession = async () => {
@@ -183,6 +186,8 @@ export default function MindScreen() {
     const updated = await appendToList<MindLog>(KEYS.mindLogs, log);
     setTodayLogs(updated.filter((l) => l.date === today));
     if (entryMode === 'pomodoro') resetPomodoro(); else resetTimer();
+    const xpEarned = Math.min(Math.floor(durationMinutes / 5) * 2, 40);
+    if (xpEarned > 0) await awardXP('foc', xpEarned);
   };
 
   const addTask = async () => {
@@ -195,10 +200,12 @@ export default function MindScreen() {
   };
 
   const toggleTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
     const updated = tasks.map((t) => t.id === id ? { ...t, done: !t.done } : t);
     await saveData(KEYS.focusTasks, updated);
     setTasks(updated);
     if (activeTaskId === id) setActiveTaskId(null);
+    if (task && !task.done) await awardXP('foc', 8);
   };
 
   const deleteTask = async (id: string) => {
