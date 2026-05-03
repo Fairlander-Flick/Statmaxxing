@@ -13,6 +13,7 @@ import {
   saveData, loadData, appendToList, KEYS, toDay, generateId,
   SleepLog, WaterLog, WeightLog, FoodItem, NutritionLog, Macro,
 } from '../lib/storage';
+import { awardXP } from '../lib/xp';
 import { useGoals } from '../lib/useGoals';
 
 type HealthTab = 'sleep' | 'water' | 'weight' | 'nutrition';
@@ -91,15 +92,20 @@ export default function HealthScreen() {
   const addWater = useCallback(async (ml: number) => {
     const logs = await loadData<WaterLog[]>(KEYS.waterLogs, []);
     const idx = logs.findIndex((l) => l.date === today);
+    let newTotal: number;
     if (idx >= 0) {
       logs[idx].totalMl += ml;
       await saveData(KEYS.waterLogs, logs);
-      setWaterToday(logs[idx].totalMl);
+      newTotal = logs[idx].totalMl;
+      setWaterToday(newTotal);
     } else {
       await saveData(KEYS.waterLogs, [...logs, { id: generateId(), date: today, totalMl: ml }]);
-      setWaterToday(ml);
+      newTotal = ml;
+      setWaterToday(newTotal);
     }
-  }, [today]);
+    await awardXP('vit', 5);
+    if (newTotal >= goals.waterMl) await awardXP('vit', 15);
+  }, [today, goals.waterMl]);
 
   const saveSleep = async () => {
     const hrs = parseFloat(sleepHours);
@@ -107,6 +113,8 @@ export default function HealthScreen() {
     const updated = await appendToList<SleepLog>(KEYS.sleepLogs, { id: generateId(), date: today, hours: hrs });
     setSleepHistory(updated.slice(-10).reverse());
     setTodaySleep(hrs); setSleepHours('');
+    await awardXP('vit', 10);
+    if (hrs >= goals.sleepHours) await awardXP('vit', 15);
   };
 
   const deleteSleepLog = async (id: string) => {
