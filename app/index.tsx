@@ -382,11 +382,14 @@ function getDateBefore(days: number): string {
   return d.toISOString().split('T')[0];
 }
 
-function computeDayScore(sleep: number | null, water: number, steps: number, workout: number, mindMins: number): number {
-  const s = Math.min((sleep ?? 0) / 7.5, 1) * 25;
-  const w = Math.min(water / 2500, 1) * 25;
-  const st = Math.min(steps / 8000, 1) * 25;
-  const f = workout > 0 ? 25 : Math.min(mindMins / 90, 1) * 25;
+function computeDayScore(
+  sleep: number | null, water: number, steps: number, workout: number, mindMins: number,
+  goals: { sleepHours: number; waterMl: number; steps: number; focusMinutes: number },
+): number {
+  const s = goals.sleepHours > 0 ? Math.min((sleep ?? 0) / goals.sleepHours, 1) * 25 : 0;
+  const w = goals.waterMl > 0 ? Math.min(water / goals.waterMl, 1) * 25 : 0;
+  const st = goals.steps > 0 ? Math.min(steps / goals.steps, 1) * 25 : 0;
+  const f = workout > 0 ? 25 : (goals.focusMinutes > 0 ? Math.min(mindMins / goals.focusMinutes, 1) * 25 : 0);
   return Math.round(s + w + st + f);
 }
 
@@ -498,7 +501,7 @@ export default function DashboardScreen() {
       const dSt = stepLogs.find(l => l.date === dateStr)?.steps ?? 0;
       const dWk = workoutLogs.filter(l => l.date === dateStr).length;
       const dM = mindLogs.filter(l => l.date === dateStr).reduce((s, l) => s + l.durationMinutes, 0);
-      return { date: dateStr, score: computeDayScore(dS, dW, dSt, dWk, dM) };
+      return { date: dateStr, score: computeDayScore(dS, dW, dSt, dWk, dM, goals) };
     });
     setDailyScores(scores);
 

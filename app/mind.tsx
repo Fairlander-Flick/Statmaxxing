@@ -275,6 +275,7 @@ export default function MindScreen() {
               <TouchableOpacity
                 key={mode}
                 onPress={() => {
+                  setTimerRunning(false);
                   setEntryMode(mode);
                   if (mode === 'pomodoro') resetPomodoro();
                 }}
