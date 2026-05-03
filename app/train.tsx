@@ -10,6 +10,7 @@ import {
   saveData, loadData, appendToList, KEYS, toDay, generateId,
   Program, ProgramDay, Exercise, WorkoutLog, SetLog, StepLog,
 } from '../lib/storage';
+import { awardXP } from '../lib/xp';
 
 type TrainView = 'home' | 'create' | 'run';
 
@@ -62,6 +63,7 @@ export default function TrainScreen() {
       setTodaySteps(s);
     }
     setStepsInput('');
+    await awardXP('str', 15);
   };
 
   const resetTodaySteps = async () => {
@@ -109,6 +111,7 @@ export default function TrainScreen() {
   const finishWorkout = async () => {
     if (!activeProgram || !activeDay) return;
     await appendToList<WorkoutLog>(KEYS.workoutLogs, { id: generateId(), date: toDay(), programId: activeProgram.id, programName: activeProgram.name, dayLabel: activeDay.label, sets: setLogs, rpe, avgDifficulty: rpe });
+    await awardXP('str', 20);
     setView('home'); setWorkoutDone(false);
   };
 
