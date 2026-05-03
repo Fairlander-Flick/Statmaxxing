@@ -12,10 +12,12 @@ import {
   loadData, KEYS, toDay,
   SleepLog, WaterLog, WeightLog, WorkoutLog, MindLog, SocialLog, NutritionLog, StepLog,
   StatLevels, DEFAULT_STAT_LEVELS, Goals,
+  WeeklyStreakState, WeeklyGoals, DEFAULT_WEEKLY_GOALS,
 } from '../lib/storage';
 import { useGoals } from '../lib/useGoals';
 import PentagonChart, { PentagonStats } from '../components/PentagonChart';
 import { xpProgress, xpToNextLevel } from '../lib/xp';
+import { refreshWeeklyStreak, computeThisWeekProgress, WeeklyProgress } from '../lib/weeklyStats';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type DayPoint = { date: string; value: number; extras?: Record<string, number> };
@@ -455,6 +457,9 @@ export default function DashboardScreen() {
   const [streak, setStreak] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [statLevels, setStatLevels] = useState<StatLevels>(DEFAULT_STAT_LEVELS);
+  const [weeklyStreak, setWeeklyStreak] = useState<WeeklyStreakState>({ current: 0, best: 0, lastCheckedWeek: '' });
+  const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoals>(DEFAULT_WEEKLY_GOALS);
+  const [weekProgress, setWeekProgress] = useState<WeeklyProgress>({ focusMinutes: 0, gymSessions: 0, waterMlTotal: 0, caloriesTotal: 0, stepsTotal: 0 });
 
   // Per-graph data
   const [caloriesData, setCaloriesData] = useState<DayPoint[]>([]);
@@ -492,6 +497,15 @@ export default function DashboardScreen() {
 
     const levels = await loadData<StatLevels>(KEYS.statLevels, DEFAULT_STAT_LEVELS);
     setStatLevels(levels);
+
+    const [wStreak, wGoals, wProg] = await Promise.all([
+      refreshWeeklyStreak(),
+      loadData<WeeklyGoals>(KEYS.weeklyGoals, DEFAULT_WEEKLY_GOALS),
+      computeThisWeekProgress(),
+    ]);
+    setWeeklyStreak(wStreak);
+    setWeeklyGoals(wGoals);
+    setWeekProgress(wProg);
 
     // This week
     const dAgoStart = (51 - selectedWeekIndex) * 7;
@@ -886,11 +900,18 @@ export default function DashboardScreen() {
             <Text style={{ fontSize: 11, fontWeight: '500', color: colors.textMuted, marginBottom: 4 }}>{dateStr}</Text>
             <Text style={{ fontSize: 28, fontWeight: fw('200', '300'), color: colors.text, letterSpacing: -0.7 }}>{greeting}</Text>
           </View>
-          {streak > 0 && (
-            <View style={[ss.streakPill, { backgroundColor: colors.accentDim }]}>
-              <Text style={{ fontSize: 12, fontWeight: '500', color: colors.accent }}>{streak}-day rhythm</Text>
-            </View>
-          )}
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            {streak > 0 && (
+              <View style={[ss.streakPill, { backgroundColor: colors.accentDim }]}>
+                <Text style={{ fontSize: 12, fontWeight: '500', color: colors.accent }}>{streak}-day rhythm</Text>
+              </View>
+            )}
+            {weeklyStreak.current > 0 && (
+              <View style={[ss.streakPill, { backgroundColor: colors.orange + '20' }]}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.orange }}>{weeklyStreak.current}w streak</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Today Goal Chips — web */}
@@ -946,6 +967,11 @@ export default function DashboardScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <Text style={{ fontSize: 22, fontWeight: fw('300', '400'), color: colors.text, letterSpacing: -0.44 }}>{greeting}</Text>
             {streak > 0 && <Text style={{ fontSize: 12, fontWeight: '500', color: colors.accent }}>{streak}-day rhythm</Text>}
+            {weeklyStreak.current > 0 && (
+              <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, backgroundColor: colors.orange + '20' }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: colors.orange }}>{weeklyStreak.current}w</Text>
+              </View>
+            )}
           </View>
         </View>
         <TouchableOpacity onPress={toggleTheme} style={ss.themeBtn}>
