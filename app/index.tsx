@@ -481,6 +481,19 @@ export default function DashboardScreen() {
 
   const today = toDay();
 
+  const spotlightMetric = (() => {
+    const sleepPct = goals.sleepHours > 0 ? (todaySummary.sleep ?? 0) / goals.sleepHours : 0;
+    const waterPct = goals.waterMl > 0 ? todaySummary.water / goals.waterMl : 0;
+    const stepsPct = goals.steps > 0 ? todaySummary.steps / goals.steps : 0;
+    if (sleepPct >= waterPct && sleepPct >= stepsPct) {
+      return { label: 'SLEEP', value: `${todaySummary.sleep ?? 0}h`, pct: sleepPct, color: colors.vit, icon: 'moon' as const };
+    }
+    if (waterPct >= stepsPct) {
+      return { label: 'WATER', value: `${(todaySummary.water / 1000).toFixed(1)}L`, pct: waterPct, color: colors.foc, icon: 'water' as const };
+    }
+    return { label: 'STEPS', value: todaySummary.steps.toLocaleString(), pct: stepsPct, color: colors.str, icon: 'footsteps' as const };
+  })();
+
   const computeStats = useCallback(async () => {
     const [sleepLogs, waterLogs, weightLogs, workoutLogs, mindLogs, socialLogs, nutritionLogs, stepLogs] =
       await Promise.all([
@@ -783,6 +796,39 @@ export default function DashboardScreen() {
     </View>
   );
 
+  const spotlightCard = (
+    <View style={{
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      padding: 20,
+      marginBottom: 16,
+      borderWidth: 1.5,
+      borderColor: spotlightMetric.color + '59',
+      overflow: 'hidden',
+    }}>
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: spotlightMetric.color }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: spotlightMetric.color }} />
+        <Text style={{ fontSize: 9, fontWeight: '700', color: spotlightMetric.color, letterSpacing: 1, textTransform: 'uppercase' }}>
+          TODAY'S BEST
+        </Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
+        <Text style={{ fontSize: 48, fontWeight: '900', color: spotlightMetric.color, letterSpacing: -2, lineHeight: 52 }}>
+          {spotlightMetric.value}
+        </Text>
+        <View style={{ paddingBottom: 6 }}>
+          <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+            {spotlightMetric.label}
+          </Text>
+          <Text style={{ fontSize: 14, color: colors.textSub, marginTop: 2 }}>
+            {Math.round(spotlightMetric.pct * 100)}% of goal
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
   const todayLog = (
     <View style={[gs.card, { marginTop: 0 }]}>
       <Text style={[gs.sectionTitle, { marginBottom: 4 }]}>TODAY</Text>
@@ -799,11 +845,13 @@ export default function DashboardScreen() {
     <View style={[gs.card, { alignItems: 'center', paddingVertical: 24, marginBottom: 0 }]}>
       <Text style={[gs.sectionTitle, { marginBottom: 16, alignSelf: 'flex-start' }]}>STAT PROFILE</Text>
       <PentagonChart
-        stats={computeStatScores(
-          todaySummary.sleep, todaySummary.water, todaySummary.steps,
-          todaySummary.workouts, todaySummary.mindMins, todaySummary.socialMins,
-          goals,
-        )}
+        stats={{
+          vit: Math.round(xpProgress(statLevels.vit) * 100),
+          str: Math.round(xpProgress(statLevels.str) * 100),
+          foc: Math.round(xpProgress(statLevels.foc) * 100),
+          soc: Math.round(xpProgress(statLevels.soc) * 100),
+          dis: Math.round(xpProgress(statLevels.dis) * 100),
+        }}
         levels={{
           vit: statLevels.vit.level,
           str: statLevels.str.level,
@@ -813,19 +861,25 @@ export default function DashboardScreen() {
         }}
         size={isDesktop ? 280 : 240}
       />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 20, width: '100%' }}>
-        {(['vit', 'str', 'foc', 'soc', 'dis'] as const).map(stat => {
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 20, width: '100%' }}>
+        {(['vit', 'str', 'dis', 'soc', 'foc'] as const).map(stat => {
           const sl = statLevels[stat];
           const pct = xpProgress(sl);
           const statColor = colors[stat];
           return (
-            <View key={stat} style={{ flex: 1, minWidth: 80 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+            <View key={stat} style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <Text style={{ fontSize: 10, fontWeight: '700', color: statColor, letterSpacing: 0.5 }}>{stat.toUpperCase()}</Text>
-                <Text style={{ fontSize: 10, color: colors.textMuted }}>Lv.{sl.level}</Text>
+                <View style={{
+                  backgroundColor: statColor + '26',
+                  borderWidth: 1, borderColor: statColor + '59',
+                  borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1,
+                }}>
+                  <Text style={{ color: statColor, fontSize: 8, fontWeight: '700' }}>{sl.level}</Text>
+                </View>
               </View>
-              <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.surfaceAlt, overflow: 'hidden' }}>
-                <View style={{ width: `${Math.round(pct * 100)}%` as any, height: 4, borderRadius: 2, backgroundColor: statColor }} />
+              <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.surfaceAlt, overflow: 'hidden' }}>
+                <View style={{ width: `${Math.round(pct * 100)}%` as any, height: 6, borderRadius: 3, backgroundColor: statColor }} />
               </View>
             </View>
           );
@@ -1133,6 +1187,7 @@ export default function DashboardScreen() {
           <View style={{ flexDirection: 'row', gap: 20 }}>
             {/* Left col — fixed */}
             <View style={{ width: 340, gap: 12 }}>
+              {spotlightCard}
               {ringSection}
               {pentagonCard}
               {todayLog}
@@ -1211,6 +1266,7 @@ export default function DashboardScreen() {
         contentContainerStyle={{ paddingBottom: 40 }}
       >
         <View style={{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 16, alignSelf: 'center' }}>
+          {spotlightCard}
           <View style={[ss.ringGrid, { marginBottom: 12 }]}>
             {[
               { label: 'STEPS', value: todaySummary.steps.toLocaleString(), goal: `/ ${goals.steps.toLocaleString()}`, pct: goals.steps > 0 ? todaySummary.steps / goals.steps : 0, color: colors.str },

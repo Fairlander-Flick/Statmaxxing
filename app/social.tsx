@@ -112,6 +112,25 @@ export default function SocialScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* ── Header ── */}
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 20, paddingVertical: 14,
+        borderBottomWidth: 1, borderBottomColor: colors.border,
+        backgroundColor: colors.bg,
+      }}>
+        <View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.soc }} />
+            <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+              Sosyal
+            </Text>
+          </View>
+          <Text style={{ fontSize: 20, fontWeight: '700', color: colors.soc, letterSpacing: -0.3 }}>
+            People
+          </Text>
+        </View>
+      </View>
       {/* Toggle */}
       <View style={[s.viewToggle, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={{ flexDirection: 'row', gap: 8, maxWidth: layout.maxWidth, width: '100%', alignSelf: 'center', paddingHorizontal: layout.hPadding }}>
@@ -135,17 +154,35 @@ export default function SocialScreen() {
           {/* ── LOG TIME ── */}
           {activeView === 'log' && (
             <>
-              <Text style={gs.screenTitle}>Social</Text>
-              <Text style={gs.screenSub}>
-                {totalMinutesToday > 0 ? `${totalMinutesToday} min with people today 🤝` : 'Log quality time with people'}
-              </Text>
-
-              {totalMinutesToday > 0 && (
-                <View style={[gs.card, { alignItems: 'center', borderColor: colors.soc + '44', paddingVertical: 24 }]}>
-                  <Text style={{ color: colors.soc, fontSize: 48, fontWeight: '900' }}>{totalMinutesToday}</Text>
-                  <Text style={{ color: colors.textSub, fontSize: 16, marginTop: 4 }}>minutes today</Text>
-                </View>
-              )}
+              {todayLogs.length > 0 && (() => {
+                const top = todayLogs.reduce((a, b) => a.minutes > b.minutes ? a : b);
+                const person = people.find(p => p.id === top.personId);
+                return (
+                  <View style={{
+                    backgroundColor: colors.surface,
+                    borderRadius: 14,
+                    padding: 20,
+                    marginBottom: 16,
+                    borderWidth: 1.5,
+                    borderColor: colors.soc + '59',
+                    overflow: 'hidden',
+                  }}>
+                    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: colors.soc }} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.soc }} />
+                      <Text style={{ fontSize: 9, fontWeight: '700', color: colors.soc, letterSpacing: 1, textTransform: 'uppercase' }}>
+                        TODAY'S TOP INTERACTION
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 20, fontWeight: '700', color: colors.soc, letterSpacing: -0.3 }}>
+                      {person?.name ?? 'Someone'}
+                    </Text>
+                    <Text style={{ fontSize: 14, color: colors.textSub, marginTop: 4 }}>
+                      {top.minutes} min
+                    </Text>
+                  </View>
+                );
+              })()}
 
               {people.length === 0 ? (
                 <View style={[gs.card, { alignItems: 'center', paddingVertical: 32 }]}>

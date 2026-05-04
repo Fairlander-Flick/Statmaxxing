@@ -184,8 +184,12 @@ export default function SettingsScreen() {
       {/* ── Header ── */}
       <View style={[s.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <View>
-          <Text style={[s.headerSub, { color: colors.textMuted }]}>TECHNICAL ATHLETE</Text>
-          <Text style={[s.headerTitle, { color: colors.text }]}>Settings</Text>
+          <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+            Configuration
+          </Text>
+          <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text, letterSpacing: -0.3 }}>
+            Settings
+          </Text>
         </View>
         <View style={[s.versionBadge, { backgroundColor: colors.accentDim, borderColor: colors.border }]}>
           <Text style={[s.versionBadgeText, { color: colors.accent }]}>v1.0</Text>

@@ -4,37 +4,37 @@ import { StyleSheet } from 'react-native';
 
 const THEME_KEY = 'app:theme';
 
-// ─── Sessiz Keskinlik — Dark ─────────────────────────────────────────────────
+// ─── Sessiz Keskinlik — Slate Cool Dark ──────────────────────────────────────
 export const DARK_COLORS = {
-  bg: '#13100e',
-  surface: '#1a1410',
-  surfaceAlt: '#201c17',
-  surfaceElevated: '#282220',
-  border: 'rgba(255,255,255,0.06)',
-  borderLight: 'rgba(255,255,255,0.10)',
-  text: '#e8e0d6',
-  textSub: 'rgba(232,224,214,0.72)',
-  textMuted: 'rgba(232,224,214,0.48)',
+  bg: '#0f1117',
+  surface: '#1a1d27',
+  surfaceAlt: '#222535',
+  surfaceElevated: '#2a2e40',
+  border: 'rgba(255,255,255,0.09)',
+  borderLight: 'rgba(255,255,255,0.13)',
+  text: '#ffffff',
+  textSub: 'rgba(255,255,255,0.72)',
+  textMuted: 'rgba(255,255,255,0.44)',
   accent: '#c2827a',
   accentHover: '#d4968e',
-  accentDim: 'rgba(194,130,122,0.15)',
+  accentDim: 'rgba(194,130,122,0.14)',
   // Semantic metric colors
-  vit: '#7ea0bc',
-  str: '#b08070',
-  foc: '#8a9b8a',
-  art: '#8c98a8',
-  soc: '#b09870',
-  dis: '#c4a679',
-  // Neutral warm alternatives
+  vit: '#7eaacc',
+  str: '#c08878',
+  foc: '#8aaa8a',
+  art: '#8ca8c4',
+  soc: '#c0a878',
+  dis: '#c4aa80',
+  // Neutral alternatives
   green: '#8aa388',
   greenDim: 'rgba(138,163,136,0.15)',
-  orange: '#c4a679',
-  orangeDim: 'rgba(196,166,121,0.15)',
-  purple: '#8c98a8',
-  purpleDim: 'rgba(140,152,168,0.15)',
+  orange: '#c4aa80',
+  orangeDim: 'rgba(196,170,128,0.15)',
+  purple: '#8ca8c4',
+  purpleDim: 'rgba(140,168,196,0.15)',
   red: '#c27070',
   redDim: 'rgba(194,112,112,0.15)',
-  yellow: '#c4a679',
+  yellow: '#c4aa80',
 };
 
 // ─── Sessiz Keskinlik — Light (canonical/default) ───────────────────────────
@@ -123,37 +123,62 @@ export function makeGlobalStyles(c: ThemeColors) {
       flex: 1,
       backgroundColor: c.bg,
     },
-    // Sessiz Keskinlik card — no shadows, warm border
+    // ── Typography scale ────────────────────────────────────────────────────
+    typoDisplay: {
+      fontSize: 48, fontWeight: '900' as const, letterSpacing: -2,
+    },
+    typoHeading: {
+      fontSize: 20, fontWeight: '700' as const, letterSpacing: -0.3,
+    },
+    typoLabel: {
+      fontSize: 11, fontWeight: '600' as const, letterSpacing: 1,
+      textTransform: 'uppercase' as const,
+    },
+    typoBody: {
+      fontSize: 14, fontWeight: '400' as const, letterSpacing: 0,
+    },
+    typoCaption: {
+      fontSize: 11, fontWeight: '400' as const, letterSpacing: 0,
+    },
+    // ── Card hierarchy ──────────────────────────────────────────────────────
     card: {
       backgroundColor: c.surface,
       borderRadius: 12,
       padding: 16,
-      marginBottom: 12,
+      marginBottom: 16,
       borderWidth: 1,
       borderColor: c.border,
     },
+    cardCompact: {
+      backgroundColor: c.surfaceAlt,
+      borderRadius: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.07)',
+    },
     cardTitle: {
-      fontSize: 13,
-      fontWeight: '600',
+      fontSize: 14,
+      fontWeight: '600' as const,
       color: c.text,
       marginBottom: 8,
       letterSpacing: -0.1,
     },
-    // Section label — 10px uppercase spaced
     label: {
-      fontSize: 10,
+      fontSize: 11,
       color: c.textMuted,
       marginBottom: 6,
-      fontWeight: '600',
-      textTransform: 'uppercase',
-      letterSpacing: 1.2,
+      fontWeight: '600' as const,
+      textTransform: 'uppercase' as const,
+      letterSpacing: 1,
     },
     sectionTitle: {
-      fontSize: 10,
-      fontWeight: '600',
+      fontSize: 11,
+      fontWeight: '600' as const,
       color: c.textMuted,
-      textTransform: 'uppercase',
-      letterSpacing: 1.2,
+      textTransform: 'uppercase' as const,
+      letterSpacing: 1,
       marginBottom: 10,
       marginTop: 4,
     },
@@ -176,7 +201,7 @@ export function makeGlobalStyles(c: ThemeColors) {
     },
     btnPrimaryText: {
       color: '#fff',
-      fontWeight: '600',
+      fontWeight: '600' as const,
       fontSize: 14,
       letterSpacing: 0.1,
     },
@@ -190,7 +215,7 @@ export function makeGlobalStyles(c: ThemeColors) {
     },
     btnSecondaryText: {
       color: c.text,
-      fontWeight: '500',
+      fontWeight: '500' as const,
       fontSize: 14,
     },
     row: {
@@ -198,19 +223,18 @@ export function makeGlobalStyles(c: ThemeColors) {
       alignItems: 'center' as const,
     },
     screenTitle: {
-      fontSize: 22,
-      fontWeight: '300',
+      fontSize: 20,
+      fontWeight: '700' as const,
       color: c.text,
       marginBottom: 2,
-      letterSpacing: -0.02 * 22,
+      letterSpacing: -0.3,
     },
     screenSub: {
-      fontSize: 13,
+      fontSize: 14,
       color: c.textSub,
       marginBottom: 20,
-      fontWeight: '400',
+      fontWeight: '400' as const,
     },
-    // Accent pill badge — muted, warm
     pill: {
       backgroundColor: c.accentDim,
       borderRadius: 999,
@@ -219,10 +243,10 @@ export function makeGlobalStyles(c: ThemeColors) {
     },
     pillText: {
       color: c.accent,
-      fontWeight: '600',
+      fontWeight: '600' as const,
       fontSize: 10,
       letterSpacing: 0.8,
-      textTransform: 'uppercase',
+      textTransform: 'uppercase' as const,
     },
   });
 }

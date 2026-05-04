@@ -14,6 +14,80 @@ const TABS = [
   { name: 'settings', href: '/settings', label: 'Settings', icon: 'person-circle-outline' as const, iconFilled: 'person-circle' as const },
 ];
 
+function CustomTabBar({ state, descriptors, navigation }: {
+  state: any; descriptors: any; navigation: any;
+}) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={{
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingBottom: Math.max(insets.bottom, 8),
+      paddingTop: 8,
+    }}>
+      {state.routes.map((route: any, index: number) => {
+        const { options } = descriptors[route.key];
+        const label = options.title ?? route.name;
+        const isFocused = state.index === index;
+        const tab = TABS.find(t => t.name === route.name);
+        if (!tab) return null;
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            style={{ flex: 1, alignItems: 'center' }}
+            onPress={() => {
+              const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+              if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+            }}
+            activeOpacity={0.8}
+          >
+            <View style={{
+              alignItems: 'center',
+              backgroundColor: isFocused ? colors.accent + '1a' : 'transparent',
+              borderRadius: 12,
+              paddingVertical: 6,
+              paddingHorizontal: 4,
+              width: 52,
+            }}>
+              {isFocused && (
+                <View style={{
+                  position: 'absolute',
+                  top: 0,
+                  width: 20,
+                  height: 2,
+                  backgroundColor: colors.accent,
+                  borderBottomLeftRadius: 2,
+                  borderBottomRightRadius: 2,
+                }} />
+              )}
+              <Ionicons
+                name={isFocused ? tab.iconFilled : tab.icon}
+                size={20}
+                color={isFocused ? colors.accent : colors.textSub}
+                style={{ opacity: isFocused ? 1 : 0.35 }}
+              />
+              <Text style={{
+                fontSize: 9,
+                fontWeight: isFocused ? '700' : '400',
+                color: isFocused ? colors.accent : colors.textSub,
+                marginTop: 2,
+                opacity: isFocused ? 1 : 0.35,
+              }}>
+                {label}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
 function Sidebar() {
   const { colors, isDark, toggleTheme } = useTheme();
   const pathname = usePathname();
@@ -130,22 +204,9 @@ function AppContent() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: isDesktop
-          ? { display: 'none' }
-          : {
-              backgroundColor: '#1e1a17',
-              borderTopColor: 'rgba(255,255,255,0.06)',
-              borderTopWidth: 1,
-              height: Platform.OS === 'ios' ? 84 : 64,
-              paddingBottom: Platform.OS === 'ios' ? 20 : 6,
-              paddingTop: 8,
-              elevation: 0,
-              shadowOpacity: 0,
-            },
-        tabBarActiveTintColor: '#c2827a',
-        tabBarInactiveTintColor: 'rgba(232,224,214,0.35)',
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '500', letterSpacing: 0.04 } as any,
+        tabBarStyle: { display: 'none' },
       }}
+      tabBar={(props) => isDesktop ? <View /> : <CustomTabBar {...props} />}
     >
       <Tabs.Screen
         name="index"

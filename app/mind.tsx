@@ -254,10 +254,22 @@ export default function MindScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* ── Header ── */}
-      <View style={[s.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 20, paddingVertical: 14,
+        borderBottomWidth: 1, borderBottomColor: colors.border,
+        backgroundColor: colors.bg,
+      }}>
         <View>
-          <Text style={[s.headerSub, { color: colors.textMuted }]}>FOCUS MODE</Text>
-          <Text style={[s.headerTitle, { color: colors.text }]}>Focus</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.foc }} />
+            <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+              Odak
+            </Text>
+          </View>
+          <Text style={{ fontSize: 20, fontWeight: '700', color: colors.foc, letterSpacing: -0.3 }}>
+            Focus
+          </Text>
         </View>
         <View style={[s.streakBadge, { backgroundColor: colors.orange + '20' }]}>
           <Ionicons name="flame" size={18} color={colors.orange} />
@@ -268,22 +280,41 @@ export default function MindScreen() {
       <ScrollView style={gs.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20, alignSelf: 'center' }}>
 
-          {/* ── Today's Total ── */}
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 6 }}>
-            <View>
-              <Text style={[s.currentFocusLabel, { color: colors.textMuted }]}>TODAY'S FOCUS</Text>
-              <Text style={[s.currentFocusValue, { color: colors.text }]}>
+          {/* ── Today's Total / Spotlight ── */}
+          {totalTodayMins > 0 ? (
+            <View style={{
+              backgroundColor: colors.surface,
+              borderRadius: 14,
+              padding: 20,
+              marginBottom: 16,
+              borderWidth: 1.5,
+              borderColor: colors.foc + '59',
+              overflow: 'hidden',
+            }}>
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: colors.foc }} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.foc }} />
+                <Text style={{ fontSize: 9, fontWeight: '700', color: colors.foc, letterSpacing: 1, textTransform: 'uppercase' }}>
+                  TODAY'S FOCUS
+                </Text>
+              </View>
+              <Text style={{ fontSize: 48, fontWeight: '900', color: colors.foc, letterSpacing: -2 }}>
                 {Math.floor(totalTodayMins / 60) > 0
                   ? `${Math.floor(totalTodayMins / 60)}h ${totalTodayMins % 60}m`
                   : `${totalTodayMins}m`}
               </Text>
-            </View>
-            {todayLogs.length > 0 && (
-              <Text style={[s.trendsText, { color: colors.soc }]}>
+              <Text style={{ fontSize: 14, color: colors.textSub, marginTop: 4 }}>
                 {todayLogs.length} session{todayLogs.length !== 1 ? 's' : ''} logged
               </Text>
-            )}
-          </View>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 6 }}>
+              <View>
+                <Text style={[s.currentFocusLabel, { color: colors.textMuted }]}>TODAY'S FOCUS</Text>
+                <Text style={[s.currentFocusValue, { color: colors.text }]}>0m</Text>
+              </View>
+            </View>
+          )}
 
           {/* ── Task List ── */}
           <View style={[gs.card, { marginTop: 20, padding: 0, overflow: 'hidden' }]}>

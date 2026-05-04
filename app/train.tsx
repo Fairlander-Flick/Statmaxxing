@@ -63,7 +63,7 @@ export default function TrainScreen() {
       setTodaySteps(s);
     }
     setStepsInput('');
-    await awardXP('str', 15);
+    await awardXP('str', 15); await awardXP('dis', 5);
   };
 
   const resetTodaySteps = async () => {
@@ -111,7 +111,7 @@ export default function TrainScreen() {
   const finishWorkout = async () => {
     if (!activeProgram || !activeDay) return;
     await appendToList<WorkoutLog>(KEYS.workoutLogs, { id: generateId(), date: toDay(), programId: activeProgram.id, programName: activeProgram.name, dayLabel: activeDay.label, sets: setLogs, rpe, avgDifficulty: rpe });
-    await awardXP('str', 20);
+    await awardXP('str', 20); await awardXP('dis', 10);
     setView('home'); setWorkoutDone(false);
   };
 
@@ -131,8 +131,55 @@ export default function TrainScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <ScrollView style={gs.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center' }}>
           <View style={contentStyle}>
-            <Text style={gs.screenTitle}>Train</Text>
-            <Text style={gs.screenSub}>Your workout programs</Text>
+            <View style={{ paddingBottom: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.str }} />
+                <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+                  Güç
+                </Text>
+              </View>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: colors.str, letterSpacing: -0.3 }}>
+                Train
+              </Text>
+            </View>
+
+            {workoutLogs.find(l => l.date === toDay()) ? (
+              <View style={{
+                backgroundColor: colors.surface,
+                borderRadius: 14,
+                padding: 20,
+                marginBottom: 16,
+                borderWidth: 1.5,
+                borderColor: colors.str + '59',
+                overflow: 'hidden',
+              }}>
+                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: colors.str }} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.str }} />
+                  <Text style={{ fontSize: 9, fontWeight: '700', color: colors.str, letterSpacing: 1, textTransform: 'uppercase' }}>
+                    TODAY'S WORKOUT
+                  </Text>
+                </View>
+                {(() => {
+                  const todayLog = workoutLogs.find(l => l.date === toDay())!;
+                  return (
+                    <>
+                      <Text style={{ fontSize: 20, fontWeight: '700', color: colors.str, letterSpacing: -0.3 }}>
+                        {todayLog.programName}
+                      </Text>
+                      <Text style={{ fontSize: 14, color: colors.textSub, marginTop: 4 }}>
+                        {todayLog.dayLabel} · {todayLog.sets.length} exercises
+                      </Text>
+                    </>
+                  );
+                })()}
+              </View>
+            ) : (
+              <View style={gs.card}>
+                <Text style={[gs.sectionTitle, { marginBottom: 8 }]}>TODAY</Text>
+                <Text style={{ fontSize: 14, color: colors.textMuted }}>No workout logged yet</Text>
+              </View>
+            )}
 
             <View style={fw}>
               <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.str, marginBottom: 20 }]} onPress={() => setView('create')}>
@@ -207,10 +254,17 @@ export default function TrainScreen() {
               <>
                 <Text style={gs.sectionTitle}>Recent Workouts</Text>
                 {workoutLogs.map((log) => (
-                  <View key={log.id} style={[gs.card, { flexDirection: 'row', alignItems: 'center' }]}>
+                  <View key={log.id} style={[gs.cardCompact, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+                    <View style={{
+                      width: 28, height: 28, borderRadius: 8,
+                      backgroundColor: colors.str + '26',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Ionicons name="barbell" size={14} color={colors.str} />
+                    </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>{log.programName}</Text>
-                      <Text style={{ color: colors.textSub, fontSize: 13, marginTop: 2 }}>{log.dayLabel} · {log.date}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{log.programName}</Text>
+                      <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>{log.dayLabel} · {log.date}</Text>
                     </View>
                     <TouchableOpacity onPress={() => deleteWorkoutLog(log.id)} style={{ padding: 8 }}>
                       <Ionicons name="trash-outline" size={18} color={colors.red} />

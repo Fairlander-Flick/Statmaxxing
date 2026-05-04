@@ -31,8 +31,8 @@ export function useLayout(): LayoutInfo {
   if (width < 600) {
     breakpoint = 'mobile';
     maxWidth = width;
-    hPadding = 16;
-    inputMaxWidth = width - 32;
+    hPadding = 20;
+    inputMaxWidth = width - 40;
     statColumns = 3;
   } else if (width < 960) {
     breakpoint = 'tablet';

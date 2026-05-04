@@ -104,7 +104,7 @@ export default function HealthScreen() {
       setWaterToday(newTotal);
     }
     await awardXP('vit', 5);
-    if (newTotal >= goals.waterMl) await awardXP('vit', 15);
+    if (newTotal >= goals.waterMl) { await awardXP('vit', 15); await awardXP('dis', 5); }
   }, [today, goals.waterMl]);
 
   const saveSleep = async () => {
@@ -114,7 +114,7 @@ export default function HealthScreen() {
     setSleepHistory(updated.slice(-10).reverse());
     setTodaySleep(hrs); setSleepHours('');
     await awardXP('vit', 10);
-    if (hrs >= goals.sleepHours) await awardXP('vit', 15);
+    if (hrs >= goals.sleepHours) { await awardXP('vit', 15); await awardXP('dis', 5); }
   };
 
   const deleteSleepLog = async (id: string) => {
@@ -207,11 +207,18 @@ export default function HealthScreen() {
       {/* ── Header ── */}
       <View style={[s.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <View>
-          <Text style={[s.headerSub, { color: colors.textMuted }]}>HEALTH TRACKER</Text>
-          <Text style={[s.headerTitle, { color: activeTabConfig.color }]}>{activeTabConfig.label}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.vit }} />
+            <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+              Vitalite
+            </Text>
+          </View>
+          <Text style={{ fontSize: 20, fontWeight: '700', color: colors.vit, letterSpacing: -0.3 }}>
+            {activeTabConfig.label}
+          </Text>
         </View>
-        <View style={[s.headerBadge, { backgroundColor: activeTabConfig.color + '20', borderColor: activeTabConfig.color + '40' }]}>
-          <Ionicons name={activeTabConfig.icon} size={20} color={activeTabConfig.color} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Ionicons name={activeTabConfig.icon} size={18} color={colors.vit} />
         </View>
       </View>
       {/* ── Tab Pill Row ── */}
@@ -238,14 +245,26 @@ export default function HealthScreen() {
           {activeTab === 'sleep' && (
             <View>
               {todaySleep !== null && (
-                <View style={[gs.card, { alignItems: 'center', borderColor: colors.art + '40', marginBottom: 14 }]}>
-                  <View style={[s.statIconLarge, { backgroundColor: colors.art + '20' }]}>
-                    <Ionicons name="moon" size={28} color={colors.art} />
+                <View style={{
+                  backgroundColor: colors.surface,
+                  borderRadius: 14,
+                  padding: 20,
+                  marginBottom: 16,
+                  borderWidth: 1.5,
+                  borderColor: colors.vit + '59',
+                  overflow: 'hidden',
+                }}>
+                  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: colors.vit }} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.vit }} />
+                    <Text style={{ fontSize: 9, fontWeight: '700', color: colors.vit, letterSpacing: 1, textTransform: 'uppercase' }}>
+                      TONIGHT'S SLEEP
+                    </Text>
                   </View>
-                  <Text style={[s.bigStat, { color: colors.art }]}>
+                  <Text style={{ fontSize: 48, fontWeight: '900', color: colors.vit, letterSpacing: -2 }}>
                     {Number.isInteger(todaySleep) ? todaySleep : Number(todaySleep).toFixed(1)}h
                   </Text>
-                  <Text style={[s.bigStatSub, { color: colors.textSub }]}>Tonight's sleep logged ✓</Text>
+                  <Text style={{ fontSize: 14, color: colors.textSub, marginTop: 4 }}>Logged ✓</Text>
                 </View>
               )}
               <View style={gs.card}>
@@ -262,12 +281,16 @@ export default function HealthScreen() {
                 <>
                   <Text style={gs.sectionTitle}>Recent Logs</Text>
                   {sleepHistory.map((w) => (
-                    <View key={w.id} style={[gs.card, { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 }]}>
-                      <View style={[s.logIconWrap, { backgroundColor: colors.art + '20' }]}>
-                        <Ionicons name="moon" size={16} color={colors.art} />
+                    <View key={w.id} style={[gs.cardCompact, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+                      <View style={{
+                        width: 28, height: 28, borderRadius: 8,
+                        backgroundColor: colors.art + '26',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Ionicons name="moon" size={14} color={colors.art} />
                       </View>
-                      <Text style={[s.logDate, { color: colors.textSub }]}>{w.date}</Text>
-                      <Text style={[s.logValue, { color: colors.art, flex: 1, textAlign: 'right', marginRight: 12 }]}>
+                      <Text style={{ fontSize: 14, color: colors.textSub }}>{w.date}</Text>
+                      <Text style={{ flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '700', color: colors.art }}>
                         {Number.isInteger(w.hours) ? w.hours : Number(w.hours).toFixed(1)}h
                       </Text>
                       <TouchableOpacity onPress={() => deleteSleepLog(w.id)} style={{ padding: 4 }}>
@@ -433,12 +456,18 @@ export default function HealthScreen() {
                 <>
                   <Text style={gs.sectionTitle}>Recent</Text>
                   {weightHistory.slice(-10).reverse().map((w) => (
-                    <View key={w.id} style={[gs.card, { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 }]}>
-                      <View style={[s.logIconWrap, { backgroundColor: colors.soc + '20' }]}>
-                        <Ionicons name="scale" size={16} color={colors.soc} />
+                    <View key={w.id} style={[gs.cardCompact, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+                      <View style={{
+                        width: 28, height: 28, borderRadius: 8,
+                        backgroundColor: colors.soc + '26',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Ionicons name="scale" size={14} color={colors.soc} />
                       </View>
-                      <Text style={[s.logDate, { color: colors.textSub }]}>{w.date}</Text>
-                      <Text style={[s.logValue, { color: colors.soc, flex: 1, textAlign: 'right', marginRight: 12 }]}>{w.kg} kg</Text>
+                      <Text style={{ fontSize: 14, color: colors.textSub }}>{w.date}</Text>
+                      <Text style={{ flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '700', color: colors.soc }}>
+                        {w.kg} kg
+                      </Text>
                       <TouchableOpacity onPress={() => deleteWeightLog(w.id)} style={{ padding: 4 }}>
                         <Ionicons name="trash-outline" size={17} color={colors.red} />
                       </TouchableOpacity>

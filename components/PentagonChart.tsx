@@ -30,8 +30,8 @@ export default function PentagonChart({ stats, levels, size = 240 }: Props) {
   const { colors } = useTheme();
   const cx = size / 2;
   const cy = size / 2;
-  const r = size * 0.38;
-  const labelR = r + 22;
+  const r = size * 0.36;
+  const labelR = r + 16;
 
   const gridLevels = [0.33, 0.66, 1.0];
 
@@ -62,22 +62,28 @@ export default function PentagonChart({ stats, levels, size = 240 }: Props) {
 
         {fullPts.map(([x, y], i) => (
           <Line key={i} x1={cx} y1={cy} x2={x} y2={y}
-            stroke={colors.border} strokeWidth={1} />
+            stroke={STAT_COLORS[STAT_ORDER[i]] + '4d'}
+            strokeWidth={1} />
         ))}
 
         <Polygon
           points={toSvgPoints(statPts)}
-          fill={colors.accent + '28'}
-          stroke={colors.accent}
-          strokeWidth={1.5}
+          fill={colors.accent + '1f'}
+          stroke={colors.accent + '99'}
+          strokeWidth={2}
         />
 
         {statPts.map(([x, y], i) => (
-          <Circle key={i} cx={x} cy={y} r={4}
-            fill={STAT_COLORS[STAT_ORDER[i]]}
-            stroke={colors.bg}
-            strokeWidth={1.5}
-          />
+          <React.Fragment key={i}>
+            <Circle cx={x} cy={y} r={5}
+              fill={colors.bg}
+              stroke={STAT_COLORS[STAT_ORDER[i]]}
+              strokeWidth={2}
+            />
+            <Circle cx={x} cy={y} r={2.5}
+              fill={STAT_COLORS[STAT_ORDER[i]]}
+            />
+          </React.Fragment>
         ))}
       </Svg>
 
