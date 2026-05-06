@@ -95,14 +95,14 @@ function Sidebar() {
 
   return (
     <View style={{
-      width: 220,
+      width: 240,
       height: '100%' as any,
       backgroundColor: colors.surface,
       borderRightWidth: 1,
       borderRightColor: colors.border,
       paddingTop: Math.max(insets.top, 28) + 8,
       paddingBottom: Math.max(insets.bottom, 24),
-      paddingHorizontal: 16,
+      paddingHorizontal: 18,
       justifyContent: 'space-between',
       flexShrink: 0,
     }}>
@@ -138,7 +138,7 @@ function Sidebar() {
                   flexDirection: 'row', alignItems: 'center', gap: 10,
                   paddingVertical: 11, paddingHorizontal: 12, borderRadius: 8,
                   backgroundColor: isActive ? colors.accentDim : 'transparent',
-                  borderLeftWidth: 2,
+                  borderLeftWidth: 3,
                   borderLeftColor: isActive ? colors.accent : 'transparent',
                 }}
               >

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ScrollView, Text, View, StyleSheet, TouchableOpacity,
-  TextInput, Modal, Animated,
+  TextInput, Modal, Animated, Alert, Platform,
 } from 'react-native';
+import { useFadeIn } from '../lib/animations';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 import { useWindowDimensions } from 'react-native';
@@ -71,7 +72,7 @@ export default function HealthScreen() {
     loadData<SleepLog[]>(KEYS.sleepLogs, []).then((logs) => {
       const todayLog = logs.filter((l) => l.date === today).pop();
       if (todayLog) setTodaySleep(todayLog.hours);
-      setSleepHistory(logs.slice(-10).reverse());
+      setSleepHistory(logs.slice(-30).reverse());
     });
     loadTodayWater();
     loadData<WeightLog[]>(KEYS.weightLogs, []).then(setWeightHistory);
@@ -111,7 +112,7 @@ export default function HealthScreen() {
     const hrs = parseFloat(sleepHours);
     if (isNaN(hrs) || hrs <= 0 || hrs > 24) return;
     const updated = await appendToList<SleepLog>(KEYS.sleepLogs, { id: generateId(), date: today, hours: hrs });
-    setSleepHistory(updated.slice(-10).reverse());
+    setSleepHistory(updated.slice(-30).reverse());
     setTodaySleep(hrs); setSleepHours('');
     await awardXP('vit', 10);
     if (hrs >= goals.sleepHours) { await awardXP('vit', 15); await awardXP('dis', 5); }
@@ -141,9 +142,16 @@ export default function HealthScreen() {
   };
 
   const deleteWeightLog = async (id: string) => {
-    const updated = weightHistory.filter((l) => l.id !== id);
-    await saveData(KEYS.weightLogs, updated);
-    setWeightHistory(updated);
+    Alert.alert('Remove', 'Remove this weight entry?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove', style: 'destructive', onPress: async () => {
+          const updated = weightHistory.filter((l) => l.id !== id);
+          await saveData(KEYS.weightLogs, updated);
+          setWeightHistory(updated);
+        },
+      },
+    ]);
   };
 
   const saveNewFood = async () => {
@@ -197,10 +205,15 @@ export default function HealthScreen() {
   );
   const fillHeight = fillAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
 
-  // Centered form block wrapper
-  const fw = { alignSelf: 'center' as const, width: '100%' as const, maxWidth: layout.inputMaxWidth };
+  const isDesktop = layout.isDesktop && Platform.OS === 'web';
+
+  // Centered form block wrapper — wider on desktop
+  const fw = { alignSelf: 'center' as const, width: '100%' as const, maxWidth: isDesktop ? layout.maxWidth : layout.inputMaxWidth };
 
   const activeTabConfig = TAB_CONFIG.find(t => t.id === activeTab)!;
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const fadeAnim = useFadeIn(60);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -210,7 +223,7 @@ export default function HealthScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.vit }} />
             <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
-              Vitalite
+              Vitality
             </Text>
           </View>
           <Text style={{ fontSize: 20, fontWeight: '700', color: colors.vit, letterSpacing: -0.3 }}>
@@ -239,73 +252,93 @@ export default function HealthScreen() {
       </View>
 
       <ScrollView style={gs.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ alignItems: 'center' }}>
-        <View style={{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20 }}>
+        <Animated.View style={[{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20, alignSelf: 'center' }, fadeAnim] as any}>
 
           {/* ── SLEEP ── */}
           {activeTab === 'sleep' && (
-            <View>
-              {todaySleep !== null && (
-                <View style={{
-                  backgroundColor: colors.surface,
-                  borderRadius: 14,
-                  padding: 20,
-                  marginBottom: 16,
-                  borderWidth: 1.5,
-                  borderColor: colors.vit + '59',
-                  overflow: 'hidden',
-                }}>
-                  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: colors.vit }} />
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.vit }} />
-                    <Text style={{ fontSize: 9, fontWeight: '700', color: colors.vit, letterSpacing: 1, textTransform: 'uppercase' }}>
-                      TONIGHT'S SLEEP
-                    </Text>
-                  </View>
-                  <Text style={{ fontSize: 48, fontWeight: '900', color: colors.vit, letterSpacing: -2 }}>
-                    {Number.isInteger(todaySleep) ? todaySleep : Number(todaySleep).toFixed(1)}h
-                  </Text>
-                  <Text style={{ fontSize: 14, color: colors.textSub, marginTop: 4 }}>Logged ✓</Text>
-                </View>
-              )}
-              <View style={gs.card}>
-                <Text style={[gs.label, { marginBottom: 8 }]}>Hours slept</Text>
-                <TextInput style={gs.input} placeholder="e.g. 7.5" placeholderTextColor={colors.textMuted} keyboardType="decimal-pad" value={sleepHours} onChangeText={setSleepHours} />
-                <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.art }]} onPress={saveSleep}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Ionicons name="moon" size={16} color="#fff" />
-                    <Text style={gs.btnPrimaryText}>Save Sleep</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-              {sleepHistory.length > 0 && (
-                <>
-                  <Text style={gs.sectionTitle}>Recent Logs</Text>
-                  {sleepHistory.map((w) => (
-                    <View key={w.id} style={[gs.cardCompact, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-                      <View style={{
-                        width: 28, height: 28, borderRadius: 8,
-                        backgroundColor: colors.art + '26',
-                        alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <Ionicons name="moon" size={14} color={colors.art} />
-                      </View>
-                      <Text style={{ fontSize: 14, color: colors.textSub }}>{w.date}</Text>
-                      <Text style={{ flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '700', color: colors.art }}>
-                        {Number.isInteger(w.hours) ? w.hours : Number(w.hours).toFixed(1)}h
-                      </Text>
-                      <TouchableOpacity onPress={() => deleteSleepLog(w.id)} style={{ padding: 4 }}>
-                        <Ionicons name="trash-outline" size={17} color={colors.red} />
-                      </TouchableOpacity>
+            <View style={isDesktop ? { flexDirection: 'row', gap: 24, alignItems: 'flex-start' } : {}}>
+              {/* Left: form */}
+              <View style={isDesktop ? { flex: 1 } : {}}>
+                <View style={gs.card}>
+                  <Text style={[gs.label, { marginBottom: 8 }]}>Hours slept</Text>
+                  <TextInput style={gs.input} placeholder="e.g. 7.5" placeholderTextColor={colors.textMuted} keyboardType="decimal-pad" value={sleepHours} onChangeText={setSleepHours} />
+                  <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.art }]} onPress={saveSleep}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="moon" size={16} color="#fff" />
+                      <Text style={gs.btnPrimaryText}>Save Sleep</Text>
                     </View>
-                  ))}
-                </>
-              )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {/* Right: today + history */}
+              <View style={isDesktop ? { flex: 1 } : {}}>
+                {todaySleep !== null && (
+                  <View style={{
+                    backgroundColor: colors.surface, borderRadius: 14, padding: 20, marginBottom: 16,
+                    borderWidth: 1.5, borderColor: colors.vit + '59', overflow: 'hidden',
+                  }}>
+                    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: colors.vit }} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.vit }} />
+                      <Text style={{ fontSize: 9, fontWeight: '700', color: colors.vit, letterSpacing: 1, textTransform: 'uppercase' }}>TONIGHT'S SLEEP</Text>
+                    </View>
+                    <Text style={{ fontSize: 48, fontWeight: '900', color: colors.vit, letterSpacing: -2 }}>
+                      {Number.isInteger(todaySleep) ? todaySleep : Number(todaySleep).toFixed(1)}h
+                    </Text>
+                    <Text style={{ fontSize: 14, color: colors.textSub, marginTop: 4 }}>Logged ✓</Text>
+                  </View>
+                )}
+                {sleepHistory.length > 0 && (
+                  <>
+                    <Text style={gs.sectionTitle}>Recent Logs</Text>
+                    {sleepHistory.map((w) => (
+                      <View key={w.id} style={[gs.cardCompact, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+                        <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: colors.art + '26', alignItems: 'center', justifyContent: 'center' }}>
+                          <Ionicons name="moon" size={14} color={colors.art} />
+                        </View>
+                        <Text style={{ fontSize: 14, color: colors.textSub }}>{w.date}</Text>
+                        <Text style={{ flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '700', color: colors.art }}>
+                          {Number.isInteger(w.hours) ? w.hours : Number(w.hours).toFixed(1)}h
+                        </Text>
+                        <TouchableOpacity onPress={() => deleteSleepLog(w.id)} style={{ padding: 4 }}>
+                          <Ionicons name="trash-outline" size={17} color={colors.red} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </>
+                )}
+              </View>
             </View>
           )}
 
           {/* ── WATER ── */}
           {activeTab === 'water' && (
-            <View>
+            <View style={isDesktop ? { flexDirection: 'row', gap: 24, alignItems: 'flex-start' } : {}}>
+              {/* Left: quick add */}
+              {isDesktop && (
+                <View style={{ flex: 1 }}>
+                  <View style={gs.card}>
+                    <Text style={[gs.sectionTitle, { marginBottom: 12 }]}>QUICK ADD</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                      {[150, 250, 330, 500].map((ml) => (
+                        <TouchableOpacity key={ml} style={[s.quickBtn, { backgroundColor: colors.foc + '15', borderColor: colors.foc + '40', flex: 1, minWidth: 80 }]} onPress={() => addWater(ml)}>
+                          <Ionicons name="water" size={14} color={colors.foc} />
+                          <Text style={[s.quickBtnText, { color: colors.foc }]}>+{ml} ml</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <TextInput style={[gs.input, { flex: 1, marginBottom: 0 }]} placeholder="Custom (ml)…" placeholderTextColor={colors.textMuted} keyboardType="numeric" value={customMl} onChangeText={setCustomMl} />
+                      <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.foc, paddingHorizontal: 20, justifyContent: 'center' }]}
+                        onPress={() => { const ml = parseInt(customMl); if (!isNaN(ml) && ml > 0) { addWater(ml); setCustomMl(''); } }}>
+                        <Text style={gs.btnPrimaryText}>Add</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              )}
+              {/* Right (or full on mobile): big water display */}
+              <View style={isDesktop ? { flex: 1 } : {}}>
               {/* Big water display */}
               <View style={[gs.card, { alignItems: 'center', borderColor: waterPct >= 100 ? colors.soc + '60' : colors.border }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -337,37 +370,35 @@ export default function HealthScreen() {
                 )}
               </View>
 
-              <Text style={gs.sectionTitle}>Quick Add</Text>
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-                {[150, 250, 330, 500].map((ml) => (
-                  <TouchableOpacity key={ml} style={[s.quickBtn, { backgroundColor: colors.foc + '15', borderColor: colors.foc + '40' }]} onPress={() => addWater(ml)}>
-                    <Ionicons name="water" size={14} color={colors.foc} />
-                    <Text style={[s.quickBtnText, { color: colors.foc }]}>+{ml}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
-                <TextInput
-                  style={[gs.input, { flex: 1, marginBottom: 0 }]}
-                  placeholder="Custom amount (ml)…"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="numeric"
-                  value={customMl}
-                  onChangeText={setCustomMl}
-                />
-                <TouchableOpacity
-                  style={[gs.btnPrimary, { backgroundColor: colors.foc, paddingHorizontal: 20, justifyContent: 'center' }]}
-                  onPress={() => { const ml = parseInt(customMl); if (!isNaN(ml) && ml > 0) { addWater(ml); setCustomMl(''); } }}>
-                  <Text style={gs.btnPrimaryText}>Add</Text>
-                </TouchableOpacity>
+              {!isDesktop && (
+                <>
+                  <Text style={gs.sectionTitle}>Quick Add</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+                    {[150, 250, 330, 500].map((ml) => (
+                      <TouchableOpacity key={ml} style={[s.quickBtn, { backgroundColor: colors.foc + '15', borderColor: colors.foc + '40' }]} onPress={() => addWater(ml)}>
+                        <Ionicons name="water" size={14} color={colors.foc} />
+                        <Text style={[s.quickBtnText, { color: colors.foc }]}>+{ml}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+                    <TextInput style={[gs.input, { flex: 1, marginBottom: 0 }]} placeholder="Custom amount (ml)…" placeholderTextColor={colors.textMuted} keyboardType="numeric" value={customMl} onChangeText={setCustomMl} />
+                    <TouchableOpacity style={[gs.btnPrimary, { backgroundColor: colors.foc, paddingHorizontal: 20, justifyContent: 'center' }]}
+                      onPress={() => { const ml = parseInt(customMl); if (!isNaN(ml) && ml > 0) { addWater(ml); setCustomMl(''); } }}>
+                      <Text style={gs.btnPrimaryText}>Add</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
               </View>
             </View>
           )}
 
           {/* ── WEIGHT ── */}
           {activeTab === 'weight' && (
-            <View>
+            <View style={isDesktop ? { flexDirection: 'row', gap: 24, alignItems: 'flex-start' } : {}}>
+              {/* Left: latest + input */}
+              <View style={isDesktop ? { flex: 1 } : {}}>
               {weightHistory.length > 0 && (
                 <View style={[gs.card, { alignItems: 'center', borderColor: colors.soc + '40', marginBottom: 14 }]}>
                   <View style={[s.statIconLarge, { backgroundColor: colors.soc + '20' }]}>
@@ -389,6 +420,9 @@ export default function HealthScreen() {
                   </View>
                 </TouchableOpacity>
               </View>
+              </View>
+              {/* Right: chart + history */}
+              <View style={isDesktop ? { flex: 1 } : {}}>
               {weightHistory.length >= 2 && (
                 <>
                   <View style={[{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }, fw]}>
@@ -475,13 +509,15 @@ export default function HealthScreen() {
                   ))}
                 </>
               )}
+              </View>
             </View>
           )}
 
           {/* ── NUTRITION ── */}
           {activeTab === 'nutrition' && (
-            <View>
-
+            <View style={isDesktop ? { flexDirection: 'row', gap: 24, alignItems: 'flex-start' } : {}}>
+              {/* Left: macro summary */}
+              <View style={isDesktop ? { flex: 1 } : {}}>
               {/* Macro overview card */}
               <View style={gs.card}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -505,13 +541,15 @@ export default function HealthScreen() {
               {(goals.calories > 0 || goals.proteinG > 0 || goals.carbsG > 0 || goals.fatG > 0) && (
                 <View style={gs.card}>
                   <Text style={[gs.cardTitle, { marginBottom: 12 }]}>Progress to Goals</Text>
-                  <MacroBar label="Calories" actual={totalToday.calories} target={goals.calories} color={colors.vit} unit="kcal" />
-                  <MacroBar label="Protein"  actual={totalToday.protein}  target={goals.proteinG} color={colors.vit} unit="g" />
-                  <MacroBar label="Carbs"    actual={totalToday.carbs}    target={goals.carbsG}   color={colors.vit} unit="g" />
+                  <MacroBar label="Calories" actual={totalToday.calories} target={goals.calories} color={colors.dis} unit="kcal" />
+                  <MacroBar label="Protein"  actual={totalToday.protein}  target={goals.proteinG} color={colors.foc} unit="g" />
+                  <MacroBar label="Carbs"    actual={totalToday.carbs}    target={goals.carbsG}   color={colors.str} unit="g" />
                   <MacroBar label="Fat"      actual={totalToday.fat}      target={goals.fatG}     color={colors.vit} unit="g" />
                 </View>
               )}
-
+              </View>
+              {/* Right: food log + add food */}
+              <View style={isDesktop ? { flex: 1 } : {}}>
               <View style={[{ flexDirection: 'row', gap: 10, marginBottom: 14 }, fw]}>
                 {foodLibrary.length > 0 && (
                   <TouchableOpacity style={[gs.btnPrimary, { flex: 1, backgroundColor: colors.str }]} onPress={() => setShowLibraryModal(true)}>
@@ -561,11 +599,12 @@ export default function HealthScreen() {
                   ))}
                 </>
               )}
+              </View>
             </View>
           )}
 
           <View style={{ height: 30 }} />
-        </View>
+        </Animated.View>
       </ScrollView>
 
       {/* Library Modal */}
@@ -612,7 +651,7 @@ function MacroBar({ label, actual, target, color, unit }: {
 }) {
   const { colors } = useTheme();
   if (target <= 0) return null;
-  const pct = (actual / target) * 100;
+  const pct = Math.min((actual / target) * 100, 100);
   return (
     <View style={{ marginBottom: 8 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>

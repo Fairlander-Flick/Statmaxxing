@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
-  ScrollView, Text, View, StyleSheet, TouchableOpacity, TextInput, Alert,
+  ScrollView, Text, View, StyleSheet, TouchableOpacity, TextInput, Alert, Animated,
 } from 'react-native';
+import { useFadeIn } from '../lib/animations';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme, makeGlobalStyles } from '../lib/ThemeContext';
@@ -98,6 +99,9 @@ export default function SocialScreen() {
   const totalMinutesToday = todayLogs.reduce((s, l) => s + l.minutes, 0);
   const fw = { alignSelf: 'center' as const, width: '100%' as const, maxWidth: layout.inputMaxWidth };
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const fadeAnim = useFadeIn(60);
+
   const getLastContact = (personId: string): string | null => {
     const logs = allSocialLogs.filter((l) => l.personId === personId);
     if (!logs.length) return null;
@@ -108,7 +112,7 @@ export default function SocialScreen() {
     if (!dateStr) return null;
     return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
   };
-  const contentStyle = { width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20 };
+  const contentStyle = { width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20, alignSelf: 'center' as const };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -123,7 +127,7 @@ export default function SocialScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.soc }} />
             <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
-              Sosyal
+              Social
             </Text>
           </View>
           <Text style={{ fontSize: 20, fontWeight: '700', color: colors.soc, letterSpacing: -0.3 }}>
@@ -149,7 +153,7 @@ export default function SocialScreen() {
       </View>
 
       <ScrollView style={gs.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center' }}>
-        <View style={contentStyle}>
+        <Animated.View style={[contentStyle, fadeAnim] as any}>
 
           {/* ── LOG TIME ── */}
           {activeView === 'log' && (
@@ -328,7 +332,7 @@ export default function SocialScreen() {
           )}
 
           <View style={{ height: 30 }} />
-        </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );

@@ -31,7 +31,7 @@ export async function generateRandomData(daysToGenerate: number = 7) {
   const existingActivities = await loadData<MindActivity[]>(KEYS.mindActivities, []);
 
   const dummyProgram = existingPrograms.length ? existingPrograms[0] : { id: 'p1', name: 'Mock Program', days: [{ id: 'd1', label: 'Day 1', isRest: false, exercises: [] }] };
-  const dummyPerson = existingPeople.length ? existingPeople[0] : { id: 's1', name: 'Alperen', type: 'Arkadaş', closeness: 8 };
+  const dummyPerson = existingPeople.length ? existingPeople[0] : { id: 's1', name: 'Alperen', type: 'Friend', closeness: 8 };
   const dummyActivity = existingActivities.length ? existingActivities[0] : { id: 'm1', name: 'Kod Yazmak', statBoost: 'FOC' };
 
   let currentWeight = 75;
@@ -128,16 +128,37 @@ export async function generateRandomData(daysToGenerate: number = 7) {
   let socXp = 0;
   for (const _ of socialLogs) socXp += 10;
 
+  // DIS XP: +5 per goal hit per day (sleep, water, steps, workout, focus)
+  const DEFAULT_STEPS_GOAL = 8000;
+  const DEFAULT_FOCUS_GOAL = 90;
+  let disXp = 0;
+  for (const date of dates) {
+    const sleep = sleepLogs.find(l => l.date === date);
+    const water = waterLogs.find(l => l.date === date);
+    const steps = stepLogs.find(l => l.date === date);
+    const workout = workoutLogs.some(l => l.date === date);
+    const focus = mindLogs.filter(l => l.date === date).reduce((s, l) => s + l.durationMinutes, 0);
+
+    let goalsHit = 0;
+    if (sleep && sleep.hours >= DEFAULT_SLEEP_GOAL) goalsHit++;
+    if (water && water.totalMl >= DEFAULT_WATER_GOAL) goalsHit++;
+    if (steps && steps.steps >= DEFAULT_STEPS_GOAL) goalsHit++;
+    if (workout) goalsHit++;
+    if (focus >= DEFAULT_FOCUS_GOAL) goalsHit++;
+    disXp += goalsHit * 5;
+  }
+
   const vitResult = computeLevel(vitXp);
   const strResult = computeLevel(strXp);
   const focResult = computeLevel(focXp);
   const socResult = computeLevel(socXp);
+  const disResult = computeLevel(disXp);
 
   await saveData(KEYS.statLevels, {
     vit: { level: vitResult.level, xp: vitResult.xp },
     str: { level: strResult.level, xp: strResult.xp },
     foc: { level: focResult.level, xp: focResult.xp },
     soc: { level: socResult.level, xp: socResult.xp },
-    dis: DEFAULT_STAT_LEVELS.dis,
+    dis: { level: disResult.level, xp: disResult.xp },
   });
 }

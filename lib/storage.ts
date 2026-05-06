@@ -26,6 +26,8 @@ export async function appendToList<T>(key: string, item: T): Promise<T[]> {
 export const KEYS = {
   // Settings
   goalsConfig: 'settings:goals',
+  profileName: 'settings:profileName',
+  selectedGraphs: 'settings:selectedGraphs',
 
   // Health
   sleepLogs: 'health:sleep',
@@ -172,7 +174,7 @@ export type MindLog = {
 };
 
 // Social types
-export type PersonType = 'Aile' | 'Hayvan' | 'Arkadaş' | 'Diğer';
+export type PersonType = 'Family' | 'Friend' | 'Pet' | 'Other';
 
 export type Person = {
   id: string;

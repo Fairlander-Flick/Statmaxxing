@@ -36,15 +36,15 @@ export function useLayout(): LayoutInfo {
     statColumns = 3;
   } else if (width < 960) {
     breakpoint = 'tablet';
-    maxWidth = width;
+    maxWidth = 720;
     hPadding = 28;
     inputMaxWidth = 480;
     statColumns = 3;
   } else {
     breakpoint = 'desktop';
-    maxWidth = 880;
-    hPadding = 40;
-    inputMaxWidth = 400;
+    maxWidth = 1040;
+    hPadding = 36;
+    inputMaxWidth = 420;
     statColumns = 3;
   }
 

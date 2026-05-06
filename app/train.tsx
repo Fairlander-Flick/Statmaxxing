@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
-  ScrollView, Text, View, StyleSheet, TouchableOpacity, TextInput, Alert,
+  ScrollView, Text, View, StyleSheet, TouchableOpacity, TextInput, Alert, Animated,
 } from 'react-native';
+import { useFadeIn } from '../lib/animations';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme, makeGlobalStyles } from '../lib/ThemeContext';
@@ -123,19 +124,22 @@ export default function TrainScreen() {
   };
 
   const fw = { alignSelf: 'center' as const, width: '100%' as const, maxWidth: layout.inputMaxWidth };
-  const contentStyle = { width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20 };
+  const contentStyle = { width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20, alignSelf: 'center' as const };
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const fadeAnim = useFadeIn(60);
 
   // ── HOME ──
   if (view === 'home') {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <ScrollView style={gs.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center' }}>
-          <View style={contentStyle}>
+          <Animated.View style={[contentStyle, fadeAnim] as any}>
             <View style={{ paddingBottom: 20 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.str }} />
                 <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
-                  Güç
+                  Strength
                 </Text>
               </View>
               <Text style={{ fontSize: 20, fontWeight: '700', color: colors.str, letterSpacing: -0.3 }}>
@@ -209,7 +213,7 @@ export default function TrainScreen() {
                   style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.red + '18', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, alignSelf: 'flex-start' }}
                 >
                   <Ionicons name="trash-outline" size={16} color={colors.red} />
-                  <Text style={{ color: colors.red, fontWeight: '700', fontSize: 13 }}>Bugünü Sıfırla</Text>
+                  <Text style={{ color: colors.red, fontWeight: '700', fontSize: 13 }}>Reset Today</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -274,7 +278,7 @@ export default function TrainScreen() {
               </>
             )}
             <View style={{ height: 30 }} />
-          </View>
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     );
@@ -285,7 +289,7 @@ export default function TrainScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <ScrollView style={gs.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ alignItems: 'center' }}>
-          <View style={contentStyle}>
+          <Animated.View style={[contentStyle, fadeAnim] as any}>
             <TouchableOpacity onPress={() => setView('home')} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 8 }}>
               <Ionicons name="arrow-back" size={22} color={colors.textSub} />
               <Text style={{ color: colors.textSub, fontSize: 16 }}>Back</Text>
@@ -338,7 +342,7 @@ export default function TrainScreen() {
               </TouchableOpacity>
             </View>
             <View style={{ height: 30 }} />
-          </View>
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     );
@@ -350,7 +354,7 @@ export default function TrainScreen() {
       return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
           <ScrollView style={gs.container} contentContainerStyle={{ alignItems: 'center' }}>
-            <View style={contentStyle}>
+            <Animated.View style={[contentStyle, fadeAnim] as any}>
               <Text style={[gs.screenTitle, { color: colors.str }]}>Done! 💪</Text>
               <Text style={gs.screenSub}>{activeProgram.name} · {activeDay.label}</Text>
               <Text style={gs.sectionTitle}>Exercises Logged</Text>
@@ -376,7 +380,7 @@ export default function TrainScreen() {
                   <Text style={gs.btnPrimaryText}>Finish & Save</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </Animated.View>
           </ScrollView>
         </SafeAreaView>
       );
@@ -388,7 +392,7 @@ export default function TrainScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <ScrollView style={gs.container} keyboardShouldPersistTaps="handled" contentContainerStyle={{ alignItems: 'center' }}>
-          <View style={contentStyle}>
+          <Animated.View style={[contentStyle, fadeAnim] as any}>
             <TouchableOpacity onPress={() => setView('home')} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 8 }}>
               <Ionicons name="arrow-back" size={22} color={colors.textSub} />
               <Text style={{ color: colors.textSub, fontSize: 16 }}>Cancel Workout</Text>
@@ -425,7 +429,7 @@ export default function TrainScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     );

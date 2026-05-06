@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  ScrollView, Text, View, StyleSheet, TouchableOpacity, TextInput,
+  ScrollView, Text, View, StyleSheet, TouchableOpacity, TextInput, Animated, Platform,
 } from 'react-native';
+import { useFadeIn } from '../lib/animations';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -250,6 +251,10 @@ export default function MindScreen() {
   const activeTask = tasks.find((t) => t.id === activeTaskId) ?? null;
   const pendingTasks = tasks.filter((t) => !t.done);
   const doneTasks = tasks.filter((t) => t.done);
+  const isDesktop = layout.isDesktop && Platform.OS === 'web';
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const fadeAnim = useFadeIn(60);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -264,7 +269,7 @@ export default function MindScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.foc }} />
             <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
-              Odak
+              Focus
             </Text>
           </View>
           <Text style={{ fontSize: 20, fontWeight: '700', color: colors.foc, letterSpacing: -0.3 }}>
@@ -278,7 +283,7 @@ export default function MindScreen() {
       </View>
 
       <ScrollView style={gs.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
-        <View style={{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20, alignSelf: 'center' }}>
+        <Animated.View style={[{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 20, alignSelf: 'center' }, fadeAnim] as any}>
 
           {/* ── Today's Total / Spotlight ── */}
           {totalTodayMins > 0 ? (
@@ -730,7 +735,7 @@ export default function MindScreen() {
                   <View
                     key={l.id}
                     style={[gs.card, { padding: 14, marginBottom: 10,
-                      opacity: 1 - (idx * 0.12), // subtle fade for older sessions
+                      opacity: Math.max(0.4, 1 - idx * 0.1),
                     }]}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -799,7 +804,7 @@ export default function MindScreen() {
           </View>
 
           <View style={{ height: 20 }} />
-        </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );

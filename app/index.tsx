@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  ScrollView, Text, View, StyleSheet, RefreshControl,
+  ScrollView, Text, View, StyleSheet, RefreshControl, Animated,
   Platform, useWindowDimensions, TouchableOpacity, PanResponder, TextInput,
 } from 'react-native';
+import { useStaggeredFade } from '../lib/animations';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Svg, { Path, Defs, LinearGradient, Stop, Line, Circle, Rect } from 'react-native-svg';
@@ -430,7 +431,7 @@ export default function DashboardScreen() {
   const layout = useLayout();
   const gs = makeGlobalStyles(colors);
   const { width } = useWindowDimensions();
-  const isDesktop = Platform.OS === 'web' && width >= 768;
+  const isDesktop = layout.isDesktop && Platform.OS === 'web';
   const { goals } = useGoals();
 
   // Graph selector state
@@ -1141,82 +1142,101 @@ export default function DashboardScreen() {
   };
 
   // ── Desktop ─────────────────────────────────────────────────────────────────
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const desktopAnims = useStaggeredFade(4, 40, 70);
+
   if (isDesktop) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        {/* Header */}
         <View style={[ss.desktopHeader, { borderBottomColor: colors.border, backgroundColor: colors.bg }]}>
-          <View>
-            <Text style={{ fontSize: 11, fontWeight: '500', color: colors.textMuted, marginBottom: 4 }}>{dateStr}</Text>
-            <Text style={{ fontSize: 28, fontWeight: fw('200', '300'), color: colors.text, letterSpacing: -0.7 }}>{greeting}</Text>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-            {streak > 0 && (
-              <View style={[ss.streakPill, { backgroundColor: colors.accentDim }]}>
-                <Text style={{ fontSize: 12, fontWeight: '500', color: colors.accent }}>{streak}-day rhythm</Text>
-              </View>
-            )}
-            {weeklyStreak.current > 0 && (
-              <View style={[ss.streakPill, { backgroundColor: colors.orange + '20' }]}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.orange }}>{weeklyStreak.current}w streak</Text>
-              </View>
-            )}
+          <View style={{ maxWidth: layout.maxWidth, alignSelf: 'center', width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View>
+              <Text style={{ fontSize: 11, fontWeight: '500', color: colors.textMuted, marginBottom: 4 }}>{dateStr}</Text>
+              <Text style={{ fontSize: 28, fontWeight: fw('200', '300'), color: colors.text, letterSpacing: -0.7 }}>{greeting}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              {streak > 0 && (
+                <View style={[ss.streakPill, { backgroundColor: colors.accentDim }]}>
+                  <Text style={{ fontSize: 12, fontWeight: '500', color: colors.accent }}>{streak}-day rhythm</Text>
+                </View>
+              )}
+              {weeklyStreak.current > 0 && (
+                <View style={[ss.streakPill, { backgroundColor: colors.orange + '20' }]}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.orange }}>{weeklyStreak.current}w streak</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
-        {/* Today Goal Chips — web */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 28, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <TouchableOpacity onPress={() => setQuickLogModal('steps')}>
-            <TodayChip icon="footsteps-outline" color={colors.str} actual={todaySummary.steps > 0 ? todaySummary.steps : null} goal={goals.steps} unit="steps" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setQuickLogModal('water')}>
-            <TodayChip icon="water-outline" color={colors.vit} actual={todaySummary.water > 0 ? todaySummary.water : null} goal={goals.waterMl} unit="ml" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setQuickLogModal('sleep')}>
-            <TodayChip icon="moon-outline" color={colors.art} actual={todaySummary.sleep} goal={goals.sleepHours} unit="h" />
-          </TouchableOpacity>
-          <TodayChip icon="timer-outline" color={colors.foc} actual={todaySummary.mindMins > 0 ? todaySummary.mindMins : null} goal={goals.focusMinutes} unit="min" />
+        {/* Today Goal Chips */}
+        <View style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <View style={{ maxWidth: layout.maxWidth, alignSelf: 'center', width: '100%', flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: layout.hPadding, paddingVertical: 10 }}>
+            <TouchableOpacity onPress={() => setQuickLogModal('steps')}>
+              <TodayChip icon="footsteps-outline" color={colors.str} actual={todaySummary.steps > 0 ? todaySummary.steps : null} goal={goals.steps} unit="steps" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setQuickLogModal('water')}>
+              <TodayChip icon="water-outline" color={colors.vit} actual={todaySummary.water > 0 ? todaySummary.water : null} goal={goals.waterMl} unit="ml" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setQuickLogModal('sleep')}>
+              <TodayChip icon="moon-outline" color={colors.art} actual={todaySummary.sleep} goal={goals.sleepHours} unit="h" />
+            </TouchableOpacity>
+            <TodayChip icon="timer-outline" color={colors.foc} actual={todaySummary.mindMins > 0 ? todaySummary.mindMins : null} goal={goals.focusMinutes} unit="min" />
+          </View>
         </View>
 
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
-          contentContainerStyle={{ padding: 24, paddingBottom: 60 }}
+          contentContainerStyle={{ paddingVertical: 28, paddingBottom: 64 }}
         >
-          {/* Graph selector */}
-          {graphSelector}
+          {/* Centered content wrapper */}
+          <View style={{ maxWidth: layout.maxWidth, alignSelf: 'center', width: '100%', paddingHorizontal: layout.hPadding }}>
 
-          <View style={{ flexDirection: 'row', gap: 20 }}>
-            {/* Left col — fixed */}
-            <View style={{ width: 340, gap: 12 }}>
-              {spotlightCard}
-              {ringSection}
-              {pentagonCard}
-              {todayLog}
-            </View>
+            {/* Graph selector */}
+            {graphSelector}
 
-            {/* Right col — selected graphs */}
-            <View style={{ flex: 1, gap: 12 }} onLayout={e => setRightColW(e.nativeEvent.layout.width)}>
-              {selectedGraphs.length === 0 && (
-                <View style={[gs.card, { alignItems: 'center', paddingVertical: 48 }]}>
-                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>Select graphs above to display here</Text>
-                </View>
-              )}
-              {GRAPH_DEFS.filter(g => selectedGraphs.includes(g.id)).map(g => renderGraphCard(g.id, rightColW))}
-            </View>
-          </View>
+            {/* Main 2-column */}
+            <Animated.View style={[{ flexDirection: 'row', gap: 24 }, desktopAnims[0]]}>
+              {/* Left col — 40% */}
+              <View style={{ flex: 2, gap: 12, minWidth: 280 }}>
+                {spotlightCard}
+                {ringSection}
+                {pentagonCard}
+                {todayLog}
+              </View>
 
-          {/* Bottom row */}
-          <View style={{ gap: 12, marginTop: 20 }}>
-            {weeklySummaryCard}
-            {insightsCard}
-            {noteCard}
-            {calendarCard}
-            {heatmapCard}
-            {weeklyCard}
+              {/* Right col — 60% graphs */}
+              <View style={{ flex: 3, gap: 12 }} onLayout={e => setRightColW(e.nativeEvent.layout.width)}>
+                {selectedGraphs.length === 0 && (
+                  <View style={[gs.card, { alignItems: 'center', paddingVertical: 48 }]}>
+                    <Text style={{ color: colors.textMuted, fontSize: 13 }}>Select graphs above to display here</Text>
+                  </View>
+                )}
+                {GRAPH_DEFS.filter(g => selectedGraphs.includes(g.id)).map(g => renderGraphCard(g.id, rightColW))}
+              </View>
+            </Animated.View>
+
+            {/* Bottom 2-column */}
+            <Animated.View style={[{ flexDirection: 'row', gap: 20, marginTop: 20, alignItems: 'flex-start' }, desktopAnims[1]]}>
+              <View style={{ flex: 1, gap: 12 }}>
+                {weeklySummaryCard}
+                {noteCard}
+                {weeklyCard}
+              </View>
+              <View style={{ flex: 1, gap: 12 }}>
+                {insightsCard}
+                {calendarCard}
+                {heatmapCard}
+              </View>
+            </Animated.View>
+
           </View>
         </ScrollView>
-      <QuickLogModal visible={quickLogModal === 'water'} title="Log Water" unit="ml" presets={[250, 500, 750]} onSave={quickLogWater} onClose={() => setQuickLogModal(null)} />
-      <QuickLogModal visible={quickLogModal === 'sleep'} title="Log Sleep" unit="hours" onSave={quickLogSleep} onClose={() => setQuickLogModal(null)} />
-      <QuickLogModal visible={quickLogModal === 'steps'} title="Log Steps" unit="steps" onSave={quickLogSteps} onClose={() => setQuickLogModal(null)} />
+
+        <QuickLogModal visible={quickLogModal === 'water'} title="Log Water" unit="ml" presets={[250, 500, 750]} onSave={quickLogWater} onClose={() => setQuickLogModal(null)} />
+        <QuickLogModal visible={quickLogModal === 'sleep'} title="Log Sleep" unit="hours" onSave={quickLogSleep} onClose={() => setQuickLogModal(null)} />
+        <QuickLogModal visible={quickLogModal === 'steps'} title="Log Steps" unit="steps" onSave={quickLogSteps} onClose={() => setQuickLogModal(null)} />
       </View>
     );
   }
@@ -1265,7 +1285,7 @@ export default function DashboardScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        <View style={{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 16, alignSelf: 'center' }}>
+        <Animated.View style={[{ width: '100%', maxWidth: layout.maxWidth, paddingHorizontal: layout.hPadding, paddingTop: 16, alignSelf: 'center' }, desktopAnims[0]]}>
           {spotlightCard}
           <View style={[ss.ringGrid, { marginBottom: 12 }]}>
             {[
@@ -1296,7 +1316,7 @@ export default function DashboardScreen() {
           {calendarCard}
           {heatmapCard}
           {weeklyCard}
-        </View>
+        </Animated.View>
       </ScrollView>
 
       <QuickLogModal visible={quickLogModal === 'water'} title="Log Water" unit="ml" presets={[250, 500, 750]} onSave={quickLogWater} onClose={() => setQuickLogModal(null)} />

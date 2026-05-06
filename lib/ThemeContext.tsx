@@ -156,7 +156,7 @@ export function makeGlobalStyles(c: ThemeColors) {
       paddingHorizontal: 14,
       marginBottom: 8,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.07)',
+      borderColor: c.border,
     },
     cardTitle: {
       fontSize: 14,
